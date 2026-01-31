@@ -1,0 +1,3 @@
+site_name = "Squash Page"
+author = "Magic Squash"
+output_dir = "public"

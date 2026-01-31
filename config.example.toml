@@ -1,0 +1,3 @@
+site_name = "My Page"
+author = "Magic Squash"
+output_dir = "page"
