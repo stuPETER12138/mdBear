@@ -1,3 +1,35 @@
+site_icon = ":-)"
 site_name = "Squash Page"
 author = "Magic Squash"
-output_dir = "public"
+output_dir = "mdbear"
+
+# 1. 首页 (Page -> content/index.md)
+[[nav]]
+name = "HOME"
+path = "index.md"
+type = "page"
+
+# 2. 经历 (Page -> content/experience.md)
+[[nav]]
+name = "EXPERIENCE"
+path = "experience.md"
+type = "page"
+
+# 3. 论文 (Page -> content/publication.md)
+[[nav]]
+name = "PUBLICATIONS"
+path = "publication.md"
+type = "page"
+
+# 4. 博客 (Blog Folder -> content/blog/*.md)
+[[nav]]
+name = "BLOG"
+path = "blog"
+type = "blog"
+
+# 5. 简历 (Link -> content/assets/cv.pdf)
+# 注意: 这里 path 是生成后的相对路径
+[[nav]]
+name = "CV (PDF)"
+path = "assets/cv.pdf"
+type = "link"
