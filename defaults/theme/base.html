@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ config.site_name }}</title>
+
+    <style>
+        /* HarmonyOS Sans is licensed under the LICENSE-update.txt in the same directory. */
+        /* harmonyos-sans-thin */
+        @font-face {
+            font-family: "HarmonyOS Sans";
+            font-style: normal;
+            font-weight: 100;
+            src:
+                local("HarmonyOS Sans Thin"),
+                local("HarmonyOSSans-Thin"),
+                url('fonts/HarmonyOS_Sans_Thin.ttf') format('truetype');
+        }
+        /* harmonyos-sans-light */
+        @font-face {
+            font-family: "HarmonyOS Sans";
+            font-style: normal;
+            font-weight: 300;
+            src:
+                local("HarmonyOS Sans Light"),
+                local("HarmonyOSSans-Light"),
+                url('fonts/HarmonyOS_Sans_Light.ttf') format('truetype');
+        }
+        /* harmonyos-sans-regular */
+        @font-face {
+            font-family: "HarmonyOS Sans";
+            font-style: normal;
+            font-weight: 400;
+            src:
+                local("HarmonyOS Sans Regular"),
+                local("HarmonyOSSans-Regular"),
+                url('fonts/HarmonyOS_Sans_Regular.ttf') format('truetype');
+        }
+        /* harmonyos-sans-medium */
+        @font-face {
+            font-family: "HarmonyOS Sans";
+            font-style: normal;
+            font-weight: 500;
+            src:
+                local("HarmonyOS Sans Medium"),
+                local("HarmonyOSSans-Medium"),
+                url('fonts/HarmonyOS_Sans_Medium.ttf') format('truetype');
+        }
+        /* harmonyos-sans-semibold */
+        @font-face {
+            font-family: "HarmonyOS Sans";
+            font-style: normal;
+            font-weight: 600;
+            src:
+                local("HarmonyOS Sans SemiBold"),
+                local("HarmonyOSSans-SemiBold"),
+                url('fonts/HarmonyOS_Sans_SemiBold.ttf') format('truetype');
+        }
+        /* harmonyos-sans-bold */
+        @font-face {
+            font-family: "HarmonyOS Sans";
+            font-style: normal;
+            font-weight: 700;
+            src:
+                local("HarmonyOS Sans Bold"),
+                local("HarmonyOSSans-Bold"),
+                url('fonts/HarmonyOS_Sans_Bold.ttf') format('truetype');
+        }
+        /* harmonyos-sans-black */
+        @font-face {
+            font-family: "HarmonyOS Sans";
+            font-style: normal;
+            font-weight: 900;
+            src:
+                local("HarmonyOS Sans Black"),
+                local("HarmonyOSSans-Black"),
+                url('fonts/HarmonyOS_Sans_Black.ttf') format('truetype');
+        }
+
+        :root {
+            --width: 600px;
+            --font-main: "HarmonyOS Sans";
+            --font-mono: monospace;
+            --color-text: #333;
+            --color-link: #0044cc;
+            --color-bg: #fff;
+        }
+
+        body {
+            font-family: var(--font-main);
+            color: var(--color-text);
+            background-color: var(--color-bg);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px
+            font-size: 18px;
+        }
+
+        body > header,
+        body > main,
+        body > footer {
+            max-width: var(--width);
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            margin-top: 2rem;
+        }
+
+        .site-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #000;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        nav {
+            margin-top: 1rem;
+        }
+
+        nav a {
+            margin-right: 15px;
+            color: var(--color-link);
+            text-decoration: none;
+            font-size: 1rem;
+        }
+
+        nav a:hover {
+            text-decoration: none;
+        }
+
+        h1, h2, h3 {
+            line-height: 1.2;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: #111;
+        }
+
+        h1 { font-size: 2rem; }
+        h2 { font-size: 1.5rem; }
+        h3 { font-size: 1.2rem; }
+        p { margin-bottom: 1.5rem; }
+
+        a {
+            color: var(--color-link);
+            text-decoration: none;
+        }
+
+        a:hover { text-decoration: none; }
+
+        ul, ol {
+            padding-left: 20px;
+            margin-bottom: 1.5rem;
+        }
+
+        li { margin-bottom: 0.5rem; }
+
+        footer {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid #eee;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        footer p {
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <a href="{{ root_path }}/index.html" class="site-title">
+            <span>{{ config.site_icon }}</span>
+            <span>{{ config.site_name }}</span>
+        </a>
+
+        <nav>
+            {% for item in config.nav %}
+                {% if item.path == "index.md" %}
+                    <a href="{{ root_path }}/index.html">{{ item.name }}</a>
+                {% elif item.type == "link" %}
+                    <a href="{{ root_path }}/{{ item.path }}" target="_blank">{{ item.name }}</a>
+                {% elif item.type == "blog" %}
+                    <a href="{{ root_path }}/{{ item.path }}/index.html">{{ item.name }}</a>
+                {% else %}
+                    <a href="{{ root_path }}/{{ item.path | replace(from=".md", to=".html") }}">{{ item.name }}</a>
+                {% endif %}
+            {% endfor %}
+        </nav>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>Powered by <a href="https://github.com/stuPETER12138/mdBear">mdBear</a> :-)</p>
+    </footer>
+</body>
+
+</html>

@@ -1,0 +1,29 @@
+site_icon = ":-)"
+site_name = "mdBear"
+author = "Magic Squash"
+output_dir = "mdbear"
+
+[[nav]]
+name = "Home"
+path = "index.md"
+type = "page"
+
+[[nav]]
+name = "Experience"
+path = "experience.md"
+type = "page"
+
+[[nav]]
+name = "Publications"
+path = "publication.md"
+type = "page"
+
+[[nav]]
+name = "Blog"
+path = "blog"
+type = "blog"
+
+[[nav]]
+name = "CV"
+path = "assets/cv.pdf"
+type = "link"

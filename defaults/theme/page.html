@@ -1,15 +1,12 @@
 {% extends "base.html" %} {% block content %}
 <article>
     <header>
-        <!-- title 在 Rust 里做了 unwrap_or(filename)，所以这里肯定有值 -->
-        <h1>{{ current_page.meta.title }}</h1>
-
-        <!-- 只有当日期存在时才显示 -->
-        {% if current_page.meta.date %}
+        {% if current_page.meta.title %}
+        <h1 class="title">{{ current_page.meta.title }}</h1>
+        {% endif %} {% if current_page.meta.date %}
         <time class="meta">{{ current_page.meta.date }}</time>
         {% endif %}
     </header>
-
     <div class="content">{{ content | safe }}</div>
 </article>
 {% endblock %}

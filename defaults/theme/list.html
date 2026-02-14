@@ -1,0 +1,52 @@
+{% extends "base.html" %} {% block content %}
+<ul class="blog-list">
+    {% for post in posts %}
+    <li class="blog-item">
+        <span class="blog-date">{{ post.meta.date }}</span>
+        <a href="{{ post.url }}" class="blog-title">{{ post.meta.title }}</a>
+    </li>
+    {% endfor %}
+</ul>
+
+<style>
+    .blog-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .blog-item {
+        display: flex;
+        margin-bottom: 12px;
+        line-height: 1.5;
+        font-size: 1.05rem;
+        font-weight: bold;
+    }
+    .blog-date {
+        flex-shrink: 0;
+        width: 140px;
+        font-family: monospace;
+        color: #444;
+        font-size: 0.7em;
+        padding-top: 2px;
+    }
+    .blog-title {
+        color: #0044cc;
+        text-decoration: none;
+    }
+    .blog-title:hover {
+        text-decoration: underline;
+    }
+    @media (max-width: 600px) {
+        .blog-item {
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+        .blog-date {
+            width: auto;
+            color: #888;
+            font-size: 0.85em;
+            margin-bottom: 4px;
+        }
+    }
+</style>
+{% endblock %}
