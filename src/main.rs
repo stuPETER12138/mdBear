@@ -20,6 +20,9 @@ async fn main() -> Result<()> {
         Commands::Serve { port, config } => {
             cmd::serve::execute(port, &config).await?;
         }
+        Commands::Sync { project } => {
+            cmd::sync::execute(&project)?;
+        }
     }
 
     Ok(())

@@ -48,4 +48,15 @@ pub enum Commands {
         )]
         config: String,
     },
+
+    #[command(about = "Sync theme files from mdbear defaults")]
+    Sync {
+        #[arg(
+            short,
+            long,
+            default_value = ".",
+            help = "Path to the project directory to sync theme files"
+        )]
+        project: String,
+    },
 }
