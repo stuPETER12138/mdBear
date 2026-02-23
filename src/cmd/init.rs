@@ -1,5 +1,6 @@
 use crate::utils::DefaultAssets;
 use anyhow::Result;
+use colored::Colorize;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
@@ -8,9 +9,13 @@ pub fn execute(name: &str) -> Result<()> {
     let root = Path::new(name);
 
     if root.exists() {
-        println!("Initializing project in existing directory: {} ...", name);
+        println!(
+            "{} {}",
+            "Initializing project in existing directory:".yellow(),
+            name.cyan()
+        );
     } else {
-        println!("Initializing project: {} ...", name);
+        println!("{} {}", "Initializing project:".yellow(), name.cyan());
         fs::create_dir(root)?;
     }
 
@@ -30,11 +35,15 @@ pub fn execute(name: &str) -> Result<()> {
     for item in &items {
         let target = root.join(item);
         if target.exists() {
-            println!("Skipping : {}", item);
+            println!(
+                "  {} {}",
+                "Skipping (exists):".bright_black(),
+                item.bright_black()
+            );
             continue;
         }
 
-        println!("Creating: {}", item);
+        println!("  {} {}", "Creating:".green(), item.green());
         for filename in DefaultAssets::iter() {
             let file_path = Path::new(filename.as_ref());
             let first = file_path
@@ -54,15 +63,22 @@ pub fn execute(name: &str) -> Result<()> {
 
     // Initialize git repository
     if root.join(".git").exists() {
-        println!("Git repository already exists, skipping...");
+        println!(
+            "  {} {}",
+            "Git repository already exists, skipping:".bright_black(),
+            "skipped".bright_black()
+        );
     } else {
-        println!("Initializing git repository...");
+        println!("{}", "Initializing git repository...".blue());
         Command::new("git").arg("init").current_dir(root).output()?;
     }
 
     println!(
-        "Project initialized!\nPlease run:\n  cd {}\n  mdbear build",
-        name
+        "\n{}\nPlease run:\n  {} {}\n  {}",
+        "Project initialized!".green().bold(),
+        "cd".cyan(),
+        name.cyan(),
+        "mdbear build".cyan()
     );
 
     Ok(())

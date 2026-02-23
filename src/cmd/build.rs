@@ -1,5 +1,6 @@
 use crate::utils::{Config, copy_dir_all, load_page};
 use anyhow::Result;
+use colored::Colorize;
 use std::fs;
 use std::path::Path;
 use tera::{Context as TeraContext, Tera};
@@ -10,7 +11,11 @@ pub fn execute(config_path: &str) -> Result<()> {
     let output_dir = Path::new(&config.output_dir);
     let content_dir = Path::new("content");
     let theme_dir = Path::new("theme");
-    println!("Building site to {:?}", output_dir);
+    println!(
+        "{} {}",
+        "Building site to".cyan(),
+        output_dir.display().to_string().cyan()
+    );
     let tera = Tera::new("theme/**/*.html")?;
     if output_dir.exists() {
         fs::remove_dir_all(output_dir)?;
@@ -82,6 +87,6 @@ pub fn execute(config_path: &str) -> Result<()> {
         }
     }
 
-    println!("Build success!");
+    println!("{}", "Build success!".green().bold());
     Ok(())
 }

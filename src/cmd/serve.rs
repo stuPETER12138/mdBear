@@ -1,13 +1,14 @@
 use crate::cmd::build;
 use crate::utils::Config;
 use anyhow::{Context, Result};
+use colored::Colorize;
 use notify::{Config as NotifyConfig, RecommendedWatcher, RecursiveMode, Watcher};
 use std::fs;
 use std::sync::mpsc;
 use std::time::Duration;
 
 pub async fn execute(port: u16, config_path: &str) -> Result<()> {
-    println!("Building...");
+    println!("{}", "Building...".cyan());
     build::execute(config_path)?;
 
     let config_str = fs::read_to_string(config_path).context("Failed to read config file")?;
@@ -19,8 +20,16 @@ pub async fn execute(port: u16, config_path: &str) -> Result<()> {
     tokio::spawn(async move {
         tokio::time::sleep(Duration::from_millis(100)).await;
         match webbrowser::open(&url_clone) {
-            Ok(_) => println!("✓ Browser opened: {}", url_clone),
-            Err(e) => eprintln!("⚠ Failed to open browser: {}", e),
+            Ok(_) => println!(
+                "{} {}",
+                "✓".green(),
+                format!("Browser opened: {}", url_clone).green()
+            ),
+            Err(e) => eprintln!(
+                "{} {}",
+                "⚠".yellow(),
+                format!("Failed to open browser: {}", e).yellow()
+            ),
         }
     });
 
@@ -29,12 +38,20 @@ pub async fn execute(port: u16, config_path: &str) -> Result<()> {
 
     if std::path::Path::new("content").exists() {
         watcher.watch(std::path::Path::new("content"), RecursiveMode::Recursive)?;
-        println!("✓ Watching content directory for changes");
+        println!(
+            "{} {}",
+            "✓".green(),
+            "Watching content directory for changes".green()
+        );
     }
 
     if std::path::Path::new("theme").exists() {
         watcher.watch(std::path::Path::new("theme"), RecursiveMode::Recursive)?;
-        println!("✓ Watching theme directory for changes");
+        println!(
+            "{} {}",
+            "✓".green(),
+            "Watching theme directory for changes".green()
+        );
     }
 
     if std::path::Path::new(config_path).exists() {
@@ -42,7 +59,11 @@ pub async fn execute(port: u16, config_path: &str) -> Result<()> {
             std::path::Path::new(config_path),
             RecursiveMode::NonRecursive,
         )?;
-        println!("✓ Watching config file for changes");
+        println!(
+            "{} {}",
+            "✓".green(),
+            "Watching config file for changes".green()
+        );
     }
 
     let config_path_for_thread = config_path.to_string();
@@ -51,29 +72,48 @@ pub async fn execute(port: u16, config_path: &str) -> Result<()> {
             match rx.recv() {
                 Ok(event) => match event {
                     Ok(_) => {
-                        println!("\n🔄 Detected file change, rebuilding...");
+                        println!("\n{}", "🔄 Detected file change, rebuilding...".blue());
                         if let Err(e) = build::execute(&config_path_for_thread) {
-                            eprintln!("⚠️  Build failed: {}", e);
+                            eprintln!(
+                                "{} {}",
+                                "⚠️".yellow(),
+                                format!("Build failed: {}", e).yellow()
+                            );
                         } else {
-                            println!("✓ Rebuild completed successfully");
+                            println!(
+                                "{} {}",
+                                "✓".green(),
+                                "Rebuild completed successfully".green()
+                            );
                         }
                     }
-                    Err(e) => eprintln!("⚠️  Watch error: {}", e),
+                    Err(e) => eprintln!(
+                        "{} {}",
+                        "⚠️".yellow(),
+                        format!("Watch error: {}", e).yellow()
+                    ),
                 },
                 Err(e) => {
-                    eprintln!("⚠️  Channel error: {}", e);
+                    eprintln!(
+                        "{} {}",
+                        "⚠️".yellow(),
+                        format!("Channel error: {}", e).yellow()
+                    );
                     break;
                 }
             }
         }
     });
 
-    println!("Watching for changes in content/, theme/, and config.toml...");
+    println!(
+        "{}",
+        "Watching for changes in content/, theme/, and config.toml...".cyan()
+    );
 
     let routes = warp::fs::dir(output_dir);
     warp::serve(routes).run(([127, 0, 0, 1], port)).await;
 
-    println!("Press Ctrl+C to stop");
+    println!("{}", "Press Ctrl+C to stop".bright_black());
 
     Ok(())
 }

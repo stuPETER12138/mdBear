@@ -1,5 +1,6 @@
 use crate::utils::DefaultAssets;
 use anyhow::Result;
+use colored::Colorize;
 use std::fs;
 use std::path::PathBuf;
 
@@ -20,7 +21,11 @@ pub fn execute(project_path: &str) -> Result<()> {
         );
     }
 
-    println!("Syncing theme files to: {}", theme_dir.display());
+    println!(
+        "{} {}",
+        "Syncing theme files to:".cyan(),
+        theme_dir.display().to_string().cyan()
+    );
 
     // Get all theme files from embedded assets
     let mut synced_count = 0;
@@ -51,18 +56,30 @@ pub fn execute(project_path: &str) -> Result<()> {
         };
 
         if needs_update {
-            println!("  Updating: {}", file_path.strip_prefix("theme/").unwrap());
+            println!(
+                "  {} {}",
+                "Updating:".yellow(),
+                file_path.strip_prefix("theme/").unwrap().yellow()
+            );
             fs::write(&target_path, embedded_file.data.as_ref())?;
             updated_count += 1;
         } else {
-            println!("  Unchanged: {}", file_path.strip_prefix("theme/").unwrap());
+            println!(
+                "  {} {}",
+                "Unchanged:".bright_black(),
+                file_path.strip_prefix("theme/").unwrap().bright_black()
+            );
         }
         synced_count += 1;
     }
 
     println!(
-        "\nSync complete! {} theme files checked, {} updated.",
-        synced_count, updated_count
+        "\n{} {} {}, {} {}",
+        "Sync complete!".green().bold(),
+        synced_count.to_string().green(),
+        "theme files checked".green(),
+        updated_count.to_string().yellow(),
+        "updated".yellow()
     );
 
     Ok(())
