@@ -2,6 +2,7 @@ site_icon = ":-)"
 site_name = "mdBear"
 author = "Magic Squash"
 output_dir = "mdbear"
+blog_url = "https://example.com/blog"
 
 [[nav]]
 name = "Home"

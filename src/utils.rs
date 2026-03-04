@@ -12,6 +12,7 @@ pub struct Config {
     pub site_name: String,
     pub author: String,
     pub output_dir: String,
+    pub blog_url: Option<String>,
     pub nav: Vec<NavItem>,
 }
 

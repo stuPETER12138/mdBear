@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>{{ config.site_name }}</title>
+    <subtitle>{{ config.site_name }} - Recent Blog Posts</subtitle>
+    <id>{{ config.blog_url | safe }}/</id>
+    <updated>{{ updated }}</updated>
+    <author>
+        <name>{{ config.author }}</name>
+    </author>
+    <link href="{{ config.blog_url | safe }}/atom.xml" rel="self" />
+    <link href="{{ config.blog_url | safe }}" />
+    <generator uri="https://github.com/stuPETER12138/mdBear">mdBear</generator>
+    {% for post in posts %}
+    <entry>
+        <title>{{ post.meta.title }}</title>
+        <link
+            href="{{ config.blog_url | safe }}/{{ post.url }}"
+            rel="alternate"
+            type="text/html"
+        />
+        <id>{{ config.blog_url | safe }}/{{ post.url }}</id>
+        <published
+        >{{ post.meta.date | date(format="%Y-%m-%dT00:00:00Z") }}</published>
+        <updated
+        >{{ post.meta.date | date(format="%Y-%m-%dT00:00:00Z") }}</updated>
+        <summary>{{ post.meta.title }}</summary>
+    </entry>
+    {% endfor %}
+</feed>

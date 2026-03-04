@@ -16,7 +16,7 @@ pub fn execute(config_path: &str) -> Result<()> {
         "Building site to".cyan(),
         output_dir.display().to_string().cyan()
     );
-    let tera = Tera::new("theme/**/*.html")?;
+    let tera = Tera::new("theme/**/*.{html,xml}")?;
     if output_dir.exists() {
         fs::remove_dir_all(output_dir)?;
     }
@@ -82,6 +82,16 @@ pub fn execute(config_path: &str) -> Result<()> {
                     section_out_dir.join("index.html"),
                     tera.render("list.html", &ctx)?,
                 )?;
+
+                // Generate Atom feed for blog sections
+                let mut feed_ctx = TeraContext::new();
+                feed_ctx.insert("config", &config);
+                feed_ctx.insert("posts", &posts);
+                let now = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
+                feed_ctx.insert("updated", &now);
+                let atom_content = tera.render("atom.xml", &feed_ctx)?;
+
+                fs::write(section_out_dir.join("atom.xml"), atom_content)?;
             }
             _ => {}
         }
