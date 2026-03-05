@@ -31,6 +31,11 @@ pub fn execute(config_path: &str) -> Result<()> {
         copy_dir_all(&fonts_src, output_dir.join("fonts"))?;
     }
 
+    let favicon_src = theme_dir.join("favicon.ico");
+    if favicon_src.exists() {
+        fs::copy(&favicon_src, output_dir.join("favicon.ico"))?;
+    }
+
     for item in &config.nav {
         match item.item_type.as_str() {
             "page" => {

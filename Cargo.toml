@@ -1,6 +1,6 @@
 [package]
 name = "mdbear"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2024"
 authors = ["Magic Squash <magic_squash@petalmail.com>"]
 description = "A Bear Blog-inspired static site generator."

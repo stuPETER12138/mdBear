@@ -8,8 +8,8 @@
     <link rel="alternate" type="application/atom+xml" href="{{ root_path }}/blog/atom.xml" title="{{ config.site_name }}">
 
     <style>
-        /* Font Faces - HarmonyOS Sans */
-        /* License: See LICENSE-update.txt */
+        /* HarmonyOS Sans & Noto Color Emoji*/
+        /* License: See LICENSE-update.txt & OFL.txt */
         @font-face {
             font-family: "HarmonyOS Sans";
             font-style: normal;
@@ -60,7 +60,15 @@
                 url("/fonts/HarmonyOS_Sans_Black.ttf") format("truetype");
         }
 
-        /* Catppuccin Latte Theme */
+        @font-face {
+          font-family: "Noto Color Emoji";
+          font-style: normal;
+          font-weight: 400;
+          src: local("Noto Color Emoji"), local("NotoColorEmoji"),
+               url("/fonts/NotoColorEmoji-Regular.ttf") format("truetype");
+        }
+
+        /* Catppuccin Theme */
         :root {
             --ctp-rosewater: #dc8a78;
             --ctp-flamingo: #dd7878;
@@ -93,7 +101,7 @@
         /* Layout Variables */
         :root {
             --width: 580px;
-            --font-main: "HarmonyOS Sans";
+            --font-main: "HarmonyOS Sans", "Noto Color Emoji";
             --font-mono: monospace;
             --color-text: var(--ctp-text);
             --color-subtext: var(--ctp-subtext0);
