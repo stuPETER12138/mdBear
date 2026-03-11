@@ -1,6 +1,6 @@
 [package]
 name = "mdbear"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2024"
 authors = ["Magic Squash <magic_squash@petalmail.com>"]
 description = "A Bear Blog-inspired static site generator."
@@ -28,8 +28,10 @@ chrono = "0.4.44"
 clap = { version = "4.5.60", features = ["derive"] }
 colored = "3.1.1"
 gray_matter = "0.3.2"
+image = { version = "0.25.10" }
 notify = "8.2.0"
 pulldown-cmark = "0.13.1"
+regex = "1.12.3"
 rust-embed = "8.11.0"
 serde = { version = "1.0.228", features = ["derive"] }
 tera = "1.20.1"

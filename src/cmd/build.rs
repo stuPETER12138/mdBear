@@ -1,4 +1,4 @@
-use crate::utils::{Config, copy_dir_all, load_page};
+use crate::utils::{Config, copy_dir_all, images2webp, load_page};
 use anyhow::Result;
 use colored::Colorize;
 use std::fs;
@@ -26,6 +26,11 @@ pub fn execute(config_path: &str) -> Result<()> {
     if assets_src.exists() {
         copy_dir_all(&assets_src, output_dir.join("assets"))?;
     }
+
+    let images_src = output_dir.join("assets");
+    let images_dst = output_dir.join("assets");
+    images2webp(&images_src, &images_dst)?;
+
     let fonts_src = theme_dir.join("fonts");
     if fonts_src.exists() {
         copy_dir_all(&fonts_src, output_dir.join("fonts"))?;
