@@ -24,7 +24,7 @@ pub struct NavItem {
     pub name: String,
     pub path: String,
     #[serde(rename = "type")]
-    // item type: "page", "blog", "link"
+    // item type: "page" (internal page), "link" (external website), "file" (internal file link)
     pub item_type: String,
 }
 

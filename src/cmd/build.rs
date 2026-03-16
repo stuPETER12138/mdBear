@@ -16,7 +16,7 @@ pub fn execute(config_path: &str) -> Result<()> {
         "Building site to".cyan(),
         output_dir.display().to_string().cyan()
     );
-    let tera = Tera::new("theme/**/*.{html,xml}")?;
+    let tera = Tera::new("theme/**/*.html")?;
     if output_dir.exists() {
         fs::remove_dir_all(output_dir)?;
     }
@@ -54,54 +54,8 @@ pub fn execute(config_path: &str) -> Result<()> {
                 let render_out = tera.render("page.html", &ctx)?;
                 fs::write(output_dir.join(&page.url), render_out)?;
             }
-            "blog" => {
-                let section_path = content_dir.join(&item.path);
-                let section_out_dir = output_dir.join(&item.path);
-                fs::create_dir_all(&section_out_dir)?;
-
-                let mut posts = Vec::new();
-                if section_path.exists() {
-                    for entry in fs::read_dir(&section_path)? {
-                        let entry = entry?;
-                        if entry.path().extension().map_or(false, |e| e == "md") {
-                            let rel_path =
-                                format!("{}/{}", item.path, entry.file_name().to_str().unwrap());
-                            if let Ok(page) = load_page(content_dir, &rel_path, true) {
-                                let mut ctx = TeraContext::new();
-                                ctx.insert("config", &config);
-                                ctx.insert("current_page", &page);
-                                ctx.insert("content", &page.content_html);
-                                ctx.insert("root_path", "..");
-
-                                let out_path = section_out_dir.join(&page.url);
-                                fs::write(out_path, tera.render("page.html", &ctx)?)?;
-                                posts.push(page);
-                            }
-                        }
-                    }
-                }
-                posts.sort_by(|a, b| b.meta.date.cmp(&a.meta.date));
-
-                let mut ctx = TeraContext::new();
-                ctx.insert("config", &config);
-                ctx.insert("section_title", &item.name);
-                ctx.insert("posts", &posts);
-                ctx.insert("root_path", "..");
-
-                fs::write(
-                    section_out_dir.join("index.html"),
-                    tera.render("list.html", &ctx)?,
-                )?;
-
-                // Generate Atom feed for blog sections
-                let mut feed_ctx = TeraContext::new();
-                feed_ctx.insert("config", &config);
-                feed_ctx.insert("posts", &posts);
-                let now = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
-                feed_ctx.insert("updated", &now);
-                let atom_content = tera.render("atom.xml", &feed_ctx)?;
-
-                fs::write(section_out_dir.join("atom.xml"), atom_content)?;
+            "link" => {
+                // link 类型指向外部网站，无需生成页面
             }
             _ => {}
         }

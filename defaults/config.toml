@@ -2,7 +2,6 @@ site_icon = ":-)"
 site_name = "mdBear"
 author = "Magic Squash"
 output_dir = "mdbear"
-blog_url = "https://example.com/blog"
 
 [[nav]]
 name = "Home"
@@ -20,11 +19,11 @@ path = "publication.md"
 type = "page"
 
 [[nav]]
-name = "Blog"
-path = "blog"
-type = "blog"
-
-[[nav]]
 name = "CV"
 path = "assets/cv.pdf"
+type = "file"
+
+[[nav]]
+name = "Links"
+path = "https://example.com"
 type = "link"
