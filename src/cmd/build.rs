@@ -1,4 +1,4 @@
-use crate::utils::{Config, copy_dir_all, images2webp, load_page};
+use crate::utils::{copy_dir_all, images2webp, load_page, Config};
 use anyhow::Result;
 use colored::Colorize;
 use std::fs;
@@ -41,6 +41,11 @@ pub fn execute(config_path: &str) -> Result<()> {
         fs::copy(&favicon_src, output_dir.join("favicon.ico"))?;
     }
 
+    let style_src = theme_dir.join("style.css");
+    if style_src.exists() {
+        fs::copy(&style_src, output_dir.join("style.css"))?;
+    }
+
     for item in &config.nav {
         match item.item_type.as_str() {
             "page" => {
@@ -54,9 +59,7 @@ pub fn execute(config_path: &str) -> Result<()> {
                 let render_out = tera.render("page.html", &ctx)?;
                 fs::write(output_dir.join(&page.url), render_out)?;
             }
-            "link" => {
-                // link 类型指向外部网站，无需生成页面
-            }
+            "link" => {}
             _ => {}
         }
     }

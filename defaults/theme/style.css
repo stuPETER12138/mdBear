@@ -1,0 +1,276 @@
+@font-face {
+    font-family: "HarmonyOS Sans";
+    font-style: normal;
+    font-weight: 100;
+    src:
+        local("HarmonyOS Sans Thin"),
+        local("HarmonyOSSans-Thin"),
+        url("/fonts/HarmonyOS_Sans_Thin.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "HarmonyOS Sans";
+    font-style: normal;
+    font-weight: 300;
+    src:
+        local("HarmonyOS Sans Light"),
+        local("HarmonyOSSans-Light"),
+        url("/fonts/HarmonyOS_Sans_Light.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "HarmonyOS Sans";
+    font-style: normal;
+    font-weight: 400;
+    src:
+        local("HarmonyOS Sans Regular"),
+        local("HarmonyOSSans-Regular"),
+        url("/fonts/HarmonyOS_Sans_Regular.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "HarmonyOS Sans";
+    font-style: normal;
+    font-weight: 500;
+    src:
+        local("HarmonyOS Sans Medium"),
+        local("HarmonyOSSans-Medium"),
+        url("/fonts/HarmonyOS_Sans_Medium.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "HarmonyOS Sans";
+    font-style: normal;
+    font-weight: 600;
+    src:
+        local("HarmonyOS Sans SemiBold"),
+        local("HarmonyOSSans-SemiBold"),
+        url("/fonts/HarmonyOS_Sans_Semibold.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "HarmonyOS Sans";
+    font-style: normal;
+    font-weight: 700;
+    src:
+        local("HarmonyOS Sans Bold"),
+        local("HarmonyOSSans-Bold"),
+        url("/fonts/HarmonyOS_Sans_Bold.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "HarmonyOS Sans";
+    font-style: normal;
+    font-weight: 900;
+    src:
+        local("HarmonyOS Sans Black"),
+        local("HarmonyOSSans-Black"),
+        url("/fonts/HarmonyOS_Sans_Black.woff2") format("woff2");
+}
+
+@font-face {
+    font-family: "Noto Color Emoji";
+    font-style: normal;
+    font-weight: 400;
+    src:
+        local("Noto Color Emoji"),
+        local("NotoColorEmoji"),
+        url("/fonts/NotoColorEmoji-Regular.ttf") format("truetype");
+}
+
+:root {
+    --ctp-rosewater: #dc8a78;
+    --ctp-flamingo: #dd7878;
+    --ctp-pink: #ea76cb;
+    --ctp-mauve: #8839ef;
+    --ctp-red: #d20f39;
+    --ctp-maroon: #e64553;
+    --ctp-peach: #fe640b;
+    --ctp-yellow: #df8e1d;
+    --ctp-green: #40a02b;
+    --ctp-teal: #179299;
+    --ctp-sky: #04a5e5;
+    --ctp-sapphire: #209fb5;
+    --ctp-blue: #1e66f5;
+    --ctp-lavender: #7287fd;
+    --ctp-text: #4c4f69;
+    --ctp-subtext1: #5c5f77;
+    --ctp-subtext0: #6c6f85;
+    --ctp-overlay2: #7c7f93;
+    --ctp-overlay1: #8c8fa1;
+    --ctp-overlay0: #9ca0b0;
+    --ctp-surface2: #acb0be;
+    --ctp-surface1: #bcc0cc;
+    --ctp-surface0: #ccd0da;
+    --ctp-base: #eff1f5;
+    --ctp-mantle: #e6e9ef;
+    --ctp-crust: #dce0e8;
+
+    --text-xs: 14px;
+    --text-sm: 16px;
+    --text-base: 18px;
+    --text-lg: 22px;
+    --text-xl: 26px;
+    --text-2xl: 32px;
+
+    --leading-tight: 1.2;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.6;
+
+    --font-main: "HarmonyOS Sans", "Noto Color Emoji";
+    --font-mono: monospace;
+
+    --color-text: var(--ctp-text);
+    --color-subtext: var(--ctp-subtext0);
+    --color-link: var(--ctp-mauve);
+    --color-bg: var(--ctp-base);
+
+    --space-xs: 0.25rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2rem;
+    --space-2xl: 3rem;
+    --space-3xl: 4rem;
+    --space-4xl: 6rem;
+}
+
+body {
+    font-family: var(--font-main);
+    font-size: var(--text-base);
+    line-height: var(--leading-relaxed);
+    color: var(--color-text);
+    background-color: var(--color-bg);
+    margin: 0;
+    padding: var(--space-md);
+}
+
+body > header,
+body > main,
+body > footer {
+    max-width: 45%;
+    margin: 0 auto;
+}
+
+header {
+    margin-top: var(--space-xl);
+    margin-bottom: var(--space-md);
+}
+
+.site-title {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--color-text);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+nav {
+    margin-top: var(--space-md);
+}
+
+nav a {
+    margin-right: var(--space-md);
+    font-size: var(--text-base);
+    color: var(--color-link);
+    text-decoration: none;
+}
+
+nav a:hover {
+    text-decoration: none;
+}
+
+h1,
+h2,
+h3 {
+    line-height: var(--leading-tight);
+    color: var(--color-text);
+    margin-top: var(--space-xl);
+    margin-bottom: var(--space-md);
+}
+
+h1 {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+}
+
+h2 {
+    font-size: var(--text-xl);
+    font-weight: 700;
+}
+
+h3 {
+    font-size: var(--text-lg);
+    font-weight: 600;
+}
+
+p {
+    margin-bottom: var(--space-lg);
+}
+
+a {
+    color: var(--color-link);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: none;
+}
+
+article header .title {
+    margin-top: var(--space-md);
+    margin-bottom: var(--space-sm);
+}
+
+article header .meta {
+    font-size: var(--text-sm);
+    color: var(--color-subtext);
+}
+
+article .content {
+    margin-top: var(--space-lg);
+}
+
+footer {
+    margin-top: var(--space-2xl);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--ctp-surface0);
+    font-size: var(--text-xs);
+    line-height: var(--leading-normal);
+    color: var(--color-subtext);
+    text-align: center;
+}
+
+footer p {
+    margin-bottom: var(--space-sm);
+}
+
+footer a {
+    color: var(--color-link);
+    text-decoration: none;
+}
+
+footer a:hover {
+    text-decoration: none;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: var(--space-lg) auto;
+}
+
+@media screen and (max-width: 768px) {
+    body {
+        padding: var(--space-sm);
+    }
+
+    body > header,
+    body > main,
+    body > footer {
+        max-width: 100%;
+    }
+}
