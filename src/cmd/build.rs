@@ -1,9 +1,9 @@
-use crate::utils::{copy_dir_all, images2webp, load_page, Config};
+use crate::utils::{Config, copy_dir_all, images2webp, load_page, scan_blog_posts};
 use anyhow::Result;
 use colored::Colorize;
 use std::fs;
 use std::path::Path;
-use tera::{Context as TeraContext, Tera};
+use tera::{Context as TeraContext, Result as TeraResult, Tera, Value};
 
 pub fn execute(config_path: &str) -> Result<()> {
     let config_str = fs::read_to_string(config_path)?;
@@ -16,7 +16,11 @@ pub fn execute(config_path: &str) -> Result<()> {
         "Building site to".cyan(),
         output_dir.display().to_string().cyan()
     );
-    let tera = Tera::new("theme/**/*.html")?;
+    let mut tera = Tera::new("theme/**/*.html")?;
+
+    // Register custom filters
+    tera.register_filter("truncate", truncate_filter);
+    tera.register_filter("date_format", date_format_filter);
     if output_dir.exists() {
         fs::remove_dir_all(output_dir)?;
     }
@@ -49,6 +53,13 @@ pub fn execute(config_path: &str) -> Result<()> {
     for item in &config.nav {
         match item.item_type.as_str() {
             "page" => {
+                if !item.path.ends_with(".md") {
+                    continue;
+                }
+                let full_path = content_dir.join(&item.path);
+                if !full_path.exists() {
+                    continue;
+                }
                 let page = load_page(content_dir, &item.path, false)?;
                 let mut ctx = TeraContext::new();
                 ctx.insert("config", &config);
@@ -64,6 +75,98 @@ pub fn execute(config_path: &str) -> Result<()> {
         }
     }
 
+    // Generate blog pages from content/blog/
+    let blog_posts = scan_blog_posts(content_dir)?;
+    if !blog_posts.is_empty() {
+        println!(
+            "{} {} {}",
+            "发现".cyan(),
+            blog_posts.len().to_string().cyan(),
+            "篇博客".cyan()
+        );
+
+        // Render individual blog post pages
+        for post in &blog_posts {
+            let mut ctx = TeraContext::new();
+            ctx.insert("config", &config);
+            ctx.insert("current_page", &post);
+            ctx.insert("content", &post.content_html);
+            ctx.insert("root_path", "..");
+
+            let render_out = tera.render("post.html", &ctx)?;
+            let post_path = output_dir.join(&post.url);
+            if let Some(parent) = post_path.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            fs::write(&post_path, render_out)?;
+            println!(
+                "  {} {}",
+                "生成:".green(),
+                post_path.display().to_string().green()
+            );
+        }
+
+        // Render blog listing page
+        let mut ctx = TeraContext::new();
+        ctx.insert("config", &config);
+        ctx.insert("posts", &blog_posts);
+        ctx.insert("root_path", ".");
+
+        let render_out = tera.render("blog.html", &ctx)?;
+        let blog_path = output_dir.join("blog.html");
+        fs::write(&blog_path, render_out)?;
+        println!(
+            "  {} {}",
+            "生成博客列表:".green(),
+            blog_path.display().to_string().green()
+        );
+    }
+
     println!("{}", "Build success!".green().bold());
     Ok(())
+}
+
+fn truncate_filter(
+    value: &Value,
+    args: &std::collections::HashMap<String, Value>,
+) -> TeraResult<Value> {
+    let s = value.as_str().unwrap_or("");
+    let length = args.get("length").and_then(|v| v.as_u64()).unwrap_or(50) as usize;
+    let ellipsis = args
+        .get("ellipsis")
+        .and_then(|v| v.as_str())
+        .unwrap_or("...");
+
+    if s.len() <= length {
+        return Ok(Value::String(s.to_string()));
+    }
+
+    let truncated = s.chars().take(length).collect::<String>();
+    Ok(Value::String(format!("{}{}", truncated, ellipsis)))
+}
+
+fn date_format_filter(
+    value: &Value,
+    args: &std::collections::HashMap<String, Value>,
+) -> TeraResult<Value> {
+    use chrono::{DateTime, NaiveDate};
+
+    let date_str = value.as_str().unwrap_or("");
+    let format = args
+        .get("format")
+        .and_then(|v| v.as_str())
+        .unwrap_or("%Y-%m-%d");
+
+    // Try parsing as ISO date (YYYY-MM-DD)
+    if let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+        return Ok(Value::String(date.format(format).to_string()));
+    }
+
+    // Try parsing as RFC3339
+    if let Ok(dt) = DateTime::parse_from_rfc3339(date_str) {
+        return Ok(Value::String(dt.format(format).to_string()));
+    }
+
+    // Return original if parsing fails
+    Ok(Value::String(date_str.to_string()))
 }
