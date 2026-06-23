@@ -50,16 +50,10 @@ fn vibe_fixture_builds_editorial_site() {
     assert_contains(&post, "Hello Typst");
     assert_contains(&post, "fa-solid fa-pen-nib");
 
-    assert_contains(
-        &css,
-        "grid-template-columns: minmax(7rem, 0.45fr) minmax(0, 42rem) minmax(14rem, 0.9fr)",
-    );
+    assert_contains(&css, "grid-template-columns: minmax(7rem, 0.45fr) minmax(0, 42rem) minmax(14rem, 0.9fr)");
     assert_contains(&css, ".immersive-light");
     assert_contains(&css, "--glow-x: 50%");
-    assert_contains(
-        &css,
-        "backdrop-filter: blur(29px) saturate(1.42) contrast(1.06)",
-    );
+    assert_contains(&css, "backdrop-filter: blur(29px) saturate(1.42) contrast(1.06)");
     assert_contains(&css, "width: 4.1rem");
     assert_contains(&css, "top: 50%");
     assert_contains(&css, "transform: translateY(-50%)");
@@ -76,11 +70,7 @@ fn temp_project_dir() -> PathBuf {
         .duration_since(UNIX_EPOCH)
         .expect("system clock before unix epoch")
         .as_millis();
-    std::env::temp_dir().join(format!(
-        "mdbear-vibe-fixture-{}-{}",
-        std::process::id(),
-        millis
-    ))
+    std::env::temp_dir().join(format!("mdbear-vibe-fixture-{}-{}", std::process::id(), millis))
 }
 
 fn copy_dir_all(src: &Path, dst: &Path) {
@@ -89,11 +79,7 @@ fn copy_dir_all(src: &Path, dst: &Path) {
         let entry = entry.expect("failed to read directory entry");
         let src_path = entry.path();
         let dst_path = dst.join(entry.file_name());
-        if entry
-            .file_type()
-            .expect("failed to read file type")
-            .is_dir()
-        {
+        if entry.file_type().expect("failed to read file type").is_dir() {
             copy_dir_all(&src_path, &dst_path);
         } else {
             fs::copy(&src_path, &dst_path).unwrap_or_else(|_| {
@@ -113,9 +99,5 @@ fn read_output(workdir: &Path, relative: &str) -> String {
 }
 
 fn assert_contains(haystack: &str, needle: &str) {
-    assert!(
-        haystack.contains(needle),
-        "missing expected content: {}",
-        needle
-    );
+    assert!(haystack.contains(needle), "missing expected content: {}", needle);
 }

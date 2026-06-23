@@ -41,14 +41,14 @@ pub struct SocialLinks {
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct ThemeConfig {
-    pub mode: Option<String>,         // "light", "dark", or "auto"
+    pub mode: Option<String>, // "light", "dark", or "auto"
     pub color_scheme: Option<String>, // "catppuccin-latte", "catppuccin-frappe", etc.
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct BlogConfig {
     pub posts_per_page: Option<usize>,
-    pub sort_by: Option<String>,    // "date", "title"
+    pub sort_by: Option<String>, // "date", "title"
     pub sort_order: Option<String>, // "asc", "desc"
 }
 
@@ -187,23 +187,9 @@ fn collect_toc<'a>(parser: MdParser<'a>) -> (Vec<Event<'a>>, Vec<TocItem>) {
 
     for event in parser {
         match event {
-            Event::Start(Tag::Heading {
-                level,
-                id,
-                classes,
-                attrs,
-            }) => {
-                heading = Some((
-                    level,
-                    id.as_ref().map(|s| s.to_string()).unwrap_or_default(),
-                    String::new(),
-                ));
-                events.push(Event::Start(Tag::Heading {
-                    level,
-                    id,
-                    classes,
-                    attrs,
-                }));
+            Event::Start(Tag::Heading { level, id, classes, attrs }) => {
+                heading = Some((level, id.as_ref().map(|s| s.to_string()).unwrap_or_default(), String::new()));
+                events.push(Event::Start(Tag::Heading { level, id, classes, attrs }));
             }
             Event::Text(text) => {
                 if let Some((_, _, title)) = &mut heading {
@@ -315,10 +301,7 @@ fn protect_typst(content: &str) -> (String, Vec<String>) {
 
 fn restore_typst(content: &str, blocks: &[String]) -> String {
     restore_blocks(content, blocks, "MDBEAR_TYPST", |block| {
-        format!(
-            "<pre class=\"typst-block\"><code>{}</code></pre>",
-            escape_html(block)
-        )
+        format!("<pre class=\"typst-block\"><code>{}</code></pre>", escape_html(block))
     })
 }
 
@@ -361,17 +344,12 @@ where
 
 fn render_sidenotes(content: &str) -> String {
     let re = Regex::new(r#"\[\^side:\s*([^\]]+)\]"#).unwrap();
-    re.replace_all(content, r#"<span class="sidenote">$1</span>"#)
-        .to_string()
+    re.replace_all(content, r#"<span class="sidenote">$1</span>"#).to_string()
 }
 
 fn render_fontawesome(content: &str) -> String {
     let re = Regex::new(r#":fa-([a-z0-9-]+):"#).unwrap();
-    re.replace_all(
-        content,
-        r#"<i class="fa-solid fa-$1" aria-hidden="true"></i>"#,
-    )
-    .to_string()
+    re.replace_all(content, r#"<i class="fa-solid fa-$1" aria-hidden="true"></i>"#).to_string()
 }
 
 fn escape_html(content: &str) -> String {
@@ -407,7 +385,12 @@ pub fn scan_blog_posts(content_dir: &Path) -> Result<Vec<Page>> {
                     posts.push(page);
                 }
                 Err(e) => {
-                    eprintln!("  {} {}: {}", "跳过".yellow(), path.display(), e);
+                    eprintln!(
+                        "  {} {}: {}",
+                        "跳过".yellow(),
+                        path.display(),
+                        e
+                    );
                 }
             }
         }
