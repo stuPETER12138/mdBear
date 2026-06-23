@@ -1340,7 +1340,7 @@ dependencies = [
 
 [[package]]
 name = "mdbear"
-version = "0.1.8"
+version = "0.1.10"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1348,6 +1348,7 @@ dependencies = [
  "colored",
  "gray_matter",
  "image",
+ "lazy_static",
  "notify",
  "pulldown-cmark",
  "regex",

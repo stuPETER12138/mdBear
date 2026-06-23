@@ -1,41 +1,68 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ config.site_name }}</title>
+    <title>{% if current_page and current_page.meta.title %}{{ current_page.meta.title }} · {% endif %}{{ config.site_name }}</title>
     <link rel="stylesheet" href="{{ root_path }}/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 
 <body>
-    <header>
-        <a href="{{ root_path }}/index.html" class="site-title">
-            <span>{{ config.site_icon }}</span>
-            <span>{{ config.site_name }}</span>
-        </a>
+    <div class="site-shell">
+        <aside class="site-rail" aria-label="站点导航">
+            <nav class="rail-nav immersive-light">
+                {% for item in config.nav %}
+                    {% if item.path == "index.md" %}
+                        <a href="{{ root_path }}/index.html"><i class="fa-solid fa-house" aria-hidden="true"></i><span>{{ item.name }}</span></a>
+                    {% elif item.path == "blog.html" %}
+                        <a href="{{ root_path }}/blog.html"><i class="fa-solid fa-book-open" aria-hidden="true"></i><span>{{ item.name }}</span></a>
+                    {% elif item.path == "about.md" %}
+                        <a href="{{ root_path }}/about.html"><i class="fa-solid fa-user" aria-hidden="true"></i><span>{{ item.name }}</span></a>
+                    {% elif item.type == "link" %}
+                        <a href="{{ item.path }}" target="_blank" rel="noreferrer"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i><span>{{ item.name }}</span></a>
+                    {% elif item.type == "file" %}
+                        <a href="{{ root_path }}/{{ item.path }}" target="_blank"><i class="fa-solid fa-file" aria-hidden="true"></i><span>{{ item.name }}</span></a>
+                    {% else %}
+                        <a href="{{ root_path }}/{{ item.path | replace(from=".md", to=".html") }}"><i class="fa-solid fa-circle-dot" aria-hidden="true"></i><span>{{ item.name }}</span></a>
+                    {% endif %}
+                {% endfor %}
+                <button class="nav-theme-toggle" type="button" aria-label="切换主题"><i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i><span>主题</span></button>
+            </nav>
+        </aside>
 
-        <nav>
-            {% for item in config.nav %}
-                {% if item.path == "index.md" %}
-                    <a href="{{ root_path }}/index.html">{{ item.name }}</a>
-                {% elif item.type == "link" %}
-                    <a href="{{ item.path }}" target="_blank">{{ item.name }}</a>
-                {% elif item.type == "file" %}
-                    <a href="{{ root_path }}/{{ item.path }}" target="_blank">{{ item.name }}</a>
-                {% else %}
-                    <a href="{{ root_path }}/{{ item.path | replace(from=".md", to=".html") }}">{{ item.name }}</a>
-                {% endif %}
-            {% endfor %}
-        </nav>
-    </header>
+        <main class="page-main">
+            {% block content %}{% endblock %}
+        </main>
 
-    <main>
-        {% block content %}{% endblock %}
-    </main>
-
-    <footer>
-        <p>May <a href="https://github.com/stuPETER12138/mdBear">mdBear</a>  be with you 😘</p>
-    </footer>
+        <aside class="page-margin" aria-label="文章目录与批注">
+            {% block margin %}{% endblock %}
+        </aside>
+    </div>
+    <script>
+        const themeToggle = document.querySelector('.nav-theme-toggle');
+        const savedTheme = localStorage.getItem('mdbear-theme');
+        if (savedTheme) {
+            document.documentElement.dataset.theme = savedTheme;
+        }
+        themeToggle?.addEventListener('click', () => {
+            const current = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.dataset.theme = next;
+            localStorage.setItem('mdbear-theme', next);
+        });
+        document.querySelectorAll('.immersive-light').forEach((surface) => {
+            surface.addEventListener('pointermove', (event) => {
+                const rect = surface.getBoundingClientRect();
+                surface.style.setProperty('--glow-x', `${event.clientX - rect.left}px`);
+                surface.style.setProperty('--glow-y', `${event.clientY - rect.top}px`);
+                surface.dataset.glowing = 'true';
+            });
+            surface.addEventListener('pointerleave', () => {
+                delete surface.dataset.glowing;
+            });
+        });
+    </script>
 </body>
 
 </html>

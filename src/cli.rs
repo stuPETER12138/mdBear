@@ -6,7 +6,6 @@ use clap::{Parser, Subcommand};
     version,
     about = "A static site generator for Bear Blog style websites."
 )]
-
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,

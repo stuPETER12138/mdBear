@@ -1,6 +1,6 @@
 [package]
 name = "mdbear"
-version = "0.1.8"
+version = "0.1.10"
 edition = "2024"
 authors = ["Magic Squash <magic_squash@petalmail.com>"]
 description = "A Bear Blog-inspired static site generator."
@@ -14,6 +14,7 @@ categories = ["command-line-utilities"]
 exclude = [
     ".git",
     ".gitignore",
+    ".claude",
     "test",
     "target",
 ]
@@ -40,3 +41,5 @@ toml = "1.0.3"
 walkdir = "2.5.0"
 warp = { version = "0.4.2", features = ["server"] }
 webbrowser = "1.1.0"
+
+lazy_static = "1.5.0"

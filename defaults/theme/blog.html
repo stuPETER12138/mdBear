@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="essay blog-index">
+    <header class="essay-header">
+        <h1 class="title">博客</h1>
+        <p class="lead">按时间整理的文章、札记与想法。</p>
+    </header>
+
+    {% if posts | length == 0 %}
+    <p class="empty-state">还没有博客文章。</p>
+    {% else %}
+    <div class="post-list">
+        {% for post in posts %}
+        <article class="post-item">
+            {% if post.meta.date %}
+            <time class="post-date">{{ post.meta.date }}</time>
+            {% endif %}
+            <h2><a href="{{ root_path }}/{{ post.url }}">{{ post.meta.title }}</a></h2>
+        </article>
+        {% endfor %}
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
+{% block margin %}
+<div class="margin-note">
+    <p>这里保留右栏，作为阅读时的目录、批注与上下文空间。</p>
+</div>
+{% endblock %}

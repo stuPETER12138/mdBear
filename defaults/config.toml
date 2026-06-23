@@ -1,29 +1,20 @@
-site_icon = ":-)"
-site_name = "mdBear"
-author = "Magic Squash"
+site_icon = "🐻"
+site_name = "我的网站"
+author = "你的名字"
+footer = "由 mdBear 强力驱动 💪"
 output_dir = "mdbear"
 
 [[nav]]
-name = "Home"
+name = "首页"
 path = "index.md"
 type = "page"
 
 [[nav]]
-name = "Experience"
-path = "experience.md"
+name = "博客"
+path = "blog.html"
 type = "page"
 
 [[nav]]
-name = "Publications"
-path = "publication.md"
+name = "关于"
+path = "about.md"
 type = "page"
-
-[[nav]]
-name = "CV"
-path = "assets/cv.pdf"
-type = "file"
-
-[[nav]]
-name = "Links"
-path = "https://example.com"
-type = "link"

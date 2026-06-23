@@ -1,1 +1,7 @@
-Hello, this is mdBear.
+---
+title: "首页"
+---
+
+# 你好，欢迎来到我的个人网站
+
+这是我的个人主页，使用 mdBear 生成。
