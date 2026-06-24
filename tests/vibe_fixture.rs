@@ -26,7 +26,9 @@ fn vibe_fixture_builds_editorial_site() {
 
     let index = read_output(&workdir, "index.html");
     let blog = read_output(&workdir, "blog.html");
+    let about = read_output(&workdir, "about.html");
     let post = read_output(&workdir, "blog/tufted-demo.html");
+    let rss = read_output(&workdir, "rss.xml");
     let css = read_output(&workdir, "style.css");
 
     assert_contains(&index, "site-shell");
@@ -39,16 +41,47 @@ fn vibe_fixture_builds_editorial_site() {
     assert_contains(&index, "nav-theme-toggle");
     assert_contains(&index, "immersive-light");
     assert_contains(&index, "pointermove");
+    assert_contains(&index, "application/rss+xml");
+    assert_contains(&index, "./rss.xml");
 
     assert_contains(&blog, "blog-index");
-    assert_contains(&blog, "三栏排版测试");
+    assert_contains(&blog, "Three-Column Layout Test");
+
+    assert_contains(
+        &about,
+        "<span class=\"sidenote\"><img src=\"assets/images/magicsquash.webp\" alt=\"Annotation figure\" />",
+    );
+    assert!(
+        workdir
+            .join("mdbear")
+            .join("assets")
+            .join("images")
+            .join("magicsquash.webp")
+            .exists()
+    );
 
     assert_contains(&post, "<details class=\"toc-card immersive-light\">");
     assert_contains(&post, "toc-level-2");
-    assert_contains(&post, "#设计目标");
+    assert_contains(&post, "#design-goals");
     assert_contains(&post, "typst-block");
     assert_contains(&post, "Hello Typst");
     assert_contains(&post, "fa-solid fa-pen-nib");
+    assert_contains(&post, "../rss.xml");
+    assert_contains(
+        &post,
+        "<span class=\"sidenote\"><img src=\"note.webp\" alt=\"Annotation figure\" />",
+    );
+
+    assert_contains(&rss, "<rss version=\"2.0\"");
+    assert_contains(&rss, "<title>Vibe Fixture</title>");
+    assert_contains(&rss, "<link>https://example.com</link>");
+    assert_contains(&rss, "<item>");
+    assert_contains(&rss, "<title>Three-Column Layout Test</title>");
+    assert_contains(
+        &rss,
+        "<link>https://example.com/blog/tufted-demo.html</link>",
+    );
+    assert_contains(&rss, "<pubDate>Wed, 24 Jun 2026 00:00:00 +0000</pubDate>");
 
     assert_contains(
         &css,
@@ -66,6 +99,7 @@ fn vibe_fixture_builds_editorial_site() {
     assert_contains(&css, "bottom: max(0.75rem, env(safe-area-inset-bottom))");
     assert_contains(&css, "display: none");
     assert_contains(&css, ".sidenote");
+    assert_contains(&css, ".sidenote img");
     assert_contains(&css, "@media (max-width: 1080px)");
 
     fs::remove_dir_all(&workdir).ok();

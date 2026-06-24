@@ -1,7 +1,9 @@
 ---
-title: "关于"
+title: "About"
 ---
 
-# 关于我
+# About Me
 
-待补充...
+Hello, hello!
+
+[^side: ![Annotation figure](assets/magicsquash.jpg) this is a picture.]

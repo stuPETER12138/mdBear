@@ -2,12 +2,12 @@
 {% block content %}
 <section class="essay blog-index">
     <header class="essay-header">
-        <h1 class="title">博客</h1>
-        <p class="lead">按时间整理的文章、札记与想法。</p>
+        <h1 class="title">Blog</h1>
+        <p class="lead">Articles, notes, and ideas organized by time.</p>
     </header>
 
     {% if posts | length == 0 %}
-    <p class="empty-state">还没有博客文章。</p>
+    <p class="empty-state">No blog posts yet.</p>
     {% else %}
     <div class="post-list">
         {% for post in posts %}
@@ -24,6 +24,6 @@
 {% endblock %}
 {% block margin %}
 <div class="margin-note">
-    <p>这里保留右栏，作为阅读时的目录、批注与上下文空间。</p>
+    <p>The right column is reserved for the table of contents, annotations, and contextual notes while reading.</p>
 </div>
 {% endblock %}

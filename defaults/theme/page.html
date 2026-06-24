@@ -15,7 +15,7 @@
 {% block margin %}
 {% if current_page.toc | length > 0 %}
 <details class="toc-card immersive-light">
-    <summary>目录</summary>
+    <summary>Contents</summary>
     <nav class="toc-links">
         {% for item in current_page.toc %}
         <a class="toc-level-{{ item.level }}" href="#{{ item.id }}">{{ item.title }}</a>
