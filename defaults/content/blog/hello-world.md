@@ -1,11 +1,11 @@
 ---
-title: "你好，世界"
+title: "Hello, World"
 date: 2026-04-25
-lang: zh
+lang: en
 ---
 
-这是你的第一篇博客文章。
+This is your first blog post.
 
-使用 `mdbear init` 初始化项目，`mdbear build` 构建网站，`mdbear serve` 本地预览。
+Use `mdbear init` to initialize a project, `mdbear build` to build the site, and `mdbear serve` to preview it locally.
 
-将 Markdown 文件放在 `content/blog/` 目录下，构建时会自动按照日期排序生成博客页面。
+Place Markdown files in the `content/blog/` directory. During the build, blog pages are generated automatically and sorted by date.

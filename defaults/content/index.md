@@ -1,7 +1,7 @@
 ---
-title: "首页"
+title: "Home"
 ---
 
-# 你好，欢迎来到我的个人网站
+# Hello, welcome to my personal website
 
-这是我的个人主页，使用 mdBear 生成。
+This is my personal homepage, generated with mdBear.

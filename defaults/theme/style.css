@@ -417,6 +417,14 @@ pre code,
     line-height: 1.55;
 }
 
+.sidenote img {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0 0 0.65rem;
+    border-radius: 0.8rem;
+}
+
 .toc-card,
 .margin-note {
     max-width: 14rem;

@@ -1,16 +1,17 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if current_page and current_page.meta.title %}{{ current_page.meta.title }} · {% endif %}{{ config.site_name }}</title>
     <link rel="stylesheet" href="{{ root_path }}/style.css">
+    <link rel="alternate" type="application/rss+xml" title="{{ config.site_name }} RSS" href="{{ root_path }}/rss.xml">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 </head>
 
 <body>
     <div class="site-shell">
-        <aside class="site-rail" aria-label="站点导航">
+        <aside class="site-rail" aria-label="Site navigation">
             <nav class="rail-nav immersive-light">
                 {% for item in config.nav %}
                     {% if item.path == "index.md" %}
@@ -27,7 +28,7 @@
                         <a href="{{ root_path }}/{{ item.path | replace(from=".md", to=".html") }}"><i class="fa-solid fa-circle-dot" aria-hidden="true"></i><span>{{ item.name }}</span></a>
                     {% endif %}
                 {% endfor %}
-                <button class="nav-theme-toggle" type="button" aria-label="切换主题"><i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i><span>主题</span></button>
+                <button class="nav-theme-toggle" type="button" aria-label="Toggle theme"><i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i><span>Theme</span></button>
             </nav>
         </aside>
 
@@ -35,7 +36,7 @@
             {% block content %}{% endblock %}
         </main>
 
-        <aside class="page-margin" aria-label="文章目录与批注">
+        <aside class="page-margin" aria-label="Table of contents and annotations">
             {% block margin %}{% endblock %}
         </aside>
     </div>

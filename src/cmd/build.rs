@@ -1,9 +1,9 @@
-use crate::utils::{copy_dir_all, images2webp, load_page, scan_blog_posts, Config};
+use crate::utils::{Config, copy_dir_all, generate_rss, images2webp, load_page, scan_blog_posts};
 use anyhow::Result;
 use colored::Colorize;
 use std::fs;
 use std::path::Path;
-use tera::{Context as TeraContext, Tera, Value, Result as TeraResult};
+use tera::{Context as TeraContext, Result as TeraResult, Tera, Value};
 
 pub fn execute(config_path: &str) -> Result<()> {
     let config_str = fs::read_to_string(config_path)?;
@@ -80,9 +80,9 @@ pub fn execute(config_path: &str) -> Result<()> {
     if !blog_posts.is_empty() {
         println!(
             "{} {} {}",
-            "发现".cyan(),
+            "Found".cyan(),
             blog_posts.len().to_string().cyan(),
-            "篇博客".cyan()
+            "blog posts".cyan()
         );
 
         // Render individual blog post pages
@@ -101,7 +101,7 @@ pub fn execute(config_path: &str) -> Result<()> {
             fs::write(&post_path, render_out)?;
             println!(
                 "  {} {}",
-                "生成:".green(),
+                "Generated:".green(),
                 post_path.display().to_string().green()
             );
         }
@@ -117,8 +117,16 @@ pub fn execute(config_path: &str) -> Result<()> {
         fs::write(&blog_path, render_out)?;
         println!(
             "  {} {}",
-            "生成博客列表:".green(),
+            "Generated blog index:".green(),
             blog_path.display().to_string().green()
+        );
+
+        let rss_path = output_dir.join("rss.xml");
+        fs::write(&rss_path, generate_rss(&config, &blog_posts))?;
+        println!(
+            "  {} {}",
+            "Generated RSS feed:".green(),
+            rss_path.display().to_string().green()
         );
     }
 
@@ -126,10 +134,16 @@ pub fn execute(config_path: &str) -> Result<()> {
     Ok(())
 }
 
-fn truncate_filter(value: &Value, args: &std::collections::HashMap<String, Value>) -> TeraResult<Value> {
+fn truncate_filter(
+    value: &Value,
+    args: &std::collections::HashMap<String, Value>,
+) -> TeraResult<Value> {
     let s = value.as_str().unwrap_or("");
     let length = args.get("length").and_then(|v| v.as_u64()).unwrap_or(50) as usize;
-    let ellipsis = args.get("ellipsis").and_then(|v| v.as_str()).unwrap_or("...");
+    let ellipsis = args
+        .get("ellipsis")
+        .and_then(|v| v.as_str())
+        .unwrap_or("...");
 
     if s.len() <= length {
         return Ok(Value::String(s.to_string()));
@@ -139,11 +153,17 @@ fn truncate_filter(value: &Value, args: &std::collections::HashMap<String, Value
     Ok(Value::String(format!("{}{}", truncated, ellipsis)))
 }
 
-fn date_format_filter(value: &Value, args: &std::collections::HashMap<String, Value>) -> TeraResult<Value> {
-    use chrono::{NaiveDate, DateTime};
+fn date_format_filter(
+    value: &Value,
+    args: &std::collections::HashMap<String, Value>,
+) -> TeraResult<Value> {
+    use chrono::{DateTime, NaiveDate};
 
     let date_str = value.as_str().unwrap_or("");
-    let format = args.get("format").and_then(|v| v.as_str()).unwrap_or("%Y-%m-%d");
+    let format = args
+        .get("format")
+        .and_then(|v| v.as_str())
+        .unwrap_or("%Y-%m-%d");
 
     // Try parsing as ISO date (YYYY-MM-DD)
     if let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {

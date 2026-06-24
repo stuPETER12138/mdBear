@@ -1,20 +1,19 @@
 site_icon = "🐻"
-site_name = "我的网站"
-author = "你的名字"
-footer = "由 mdBear 强力驱动 💪"
+site_name = "My Website"
+author = "Your Name"
 output_dir = "mdbear"
 
 [[nav]]
-name = "首页"
+name = "Home"
 path = "index.md"
 type = "page"
 
 [[nav]]
-name = "博客"
+name = "Blog"
 path = "blog.html"
 type = "page"
 
 [[nav]]
-name = "关于"
+name = "About"
 path = "about.md"
 type = "page"

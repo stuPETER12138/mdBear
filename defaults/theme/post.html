@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <nav class="breadcrumb">
-    <a href="{{ root_path }}/blog.html">返回博客</a>
+    <a href="{{ root_path }}/blog.html">Back to blog</a>
 </nav>
 <article class="essay">
     <header class="essay-header">
@@ -18,7 +18,7 @@
 {% block margin %}
 {% if current_page.toc | length > 0 %}
 <details class="toc-card immersive-light">
-    <summary>目录</summary>
+    <summary>Contents</summary>
     <nav class="toc-links">
         {% for item in current_page.toc %}
         <a class="toc-level-{{ item.level }}" href="#{{ item.id }}">{{ item.title }}</a>

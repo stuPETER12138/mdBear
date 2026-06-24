@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use chrono::{DateTime, NaiveDate, TimeZone, Utc};
 use colored::Colorize;
 use gray_matter::{Matter, ParsedEntity, engine::YAML};
 use image::{DynamicImage, GenericImageView, ImageFormat, imageops::Lanczos3};
@@ -15,8 +16,6 @@ pub struct Config {
     pub site_icon: String,
     pub site_name: String,
     pub author: String,
-    #[serde(default)]
-    pub footer: Option<String>,
     pub output_dir: String,
     pub blog_url: Option<String>,
     #[serde(default)]
@@ -41,14 +40,14 @@ pub struct SocialLinks {
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct ThemeConfig {
-    pub mode: Option<String>, // "light", "dark", or "auto"
+    pub mode: Option<String>,         // "light", "dark", or "auto"
     pub color_scheme: Option<String>, // "catppuccin-latte", "catppuccin-frappe", etc.
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct BlogConfig {
     pub posts_per_page: Option<usize>,
-    pub sort_by: Option<String>, // "date", "title"
+    pub sort_by: Option<String>,    // "date", "title"
     pub sort_order: Option<String>, // "asc", "desc"
 }
 
@@ -187,9 +186,23 @@ fn collect_toc<'a>(parser: MdParser<'a>) -> (Vec<Event<'a>>, Vec<TocItem>) {
 
     for event in parser {
         match event {
-            Event::Start(Tag::Heading { level, id, classes, attrs }) => {
-                heading = Some((level, id.as_ref().map(|s| s.to_string()).unwrap_or_default(), String::new()));
-                events.push(Event::Start(Tag::Heading { level, id, classes, attrs }));
+            Event::Start(Tag::Heading {
+                level,
+                id,
+                classes,
+                attrs,
+            }) => {
+                heading = Some((
+                    level,
+                    id.as_ref().map(|s| s.to_string()).unwrap_or_default(),
+                    String::new(),
+                ));
+                events.push(Event::Start(Tag::Heading {
+                    level,
+                    id,
+                    classes,
+                    attrs,
+                }));
             }
             Event::Text(text) => {
                 if let Some((_, _, title)) = &mut heading {
@@ -301,7 +314,10 @@ fn protect_typst(content: &str) -> (String, Vec<String>) {
 
 fn restore_typst(content: &str, blocks: &[String]) -> String {
     restore_blocks(content, blocks, "MDBEAR_TYPST", |block| {
-        format!("<pre class=\"typst-block\"><code>{}</code></pre>", escape_html(block))
+        format!(
+            "<pre class=\"typst-block\"><code>{}</code></pre>",
+            escape_html(block)
+        )
     })
 }
 
@@ -343,13 +359,18 @@ where
 }
 
 fn render_sidenotes(content: &str) -> String {
-    let re = Regex::new(r#"\[\^side:\s*([^\]]+)\]"#).unwrap();
-    re.replace_all(content, r#"<span class="sidenote">$1</span>"#).to_string()
+    let re = Regex::new(r#"(?s)\[\^side:\s*(.*?)\]"#).unwrap();
+    re.replace_all(content, r#"<span class="sidenote">$1</span>"#)
+        .to_string()
 }
 
 fn render_fontawesome(content: &str) -> String {
     let re = Regex::new(r#":fa-([a-z0-9-]+):"#).unwrap();
-    re.replace_all(content, r#"<i class="fa-solid fa-$1" aria-hidden="true"></i>"#).to_string()
+    re.replace_all(
+        content,
+        r#"<i class="fa-solid fa-$1" aria-hidden="true"></i>"#,
+    )
+    .to_string()
 }
 
 fn escape_html(content: &str) -> String {
@@ -359,6 +380,108 @@ fn escape_html(content: &str) -> String {
         .replace('>', "&gt;")
         .replace('"', "&quot;")
         .replace('\'', "&#39;")
+}
+
+pub fn generate_rss(config: &Config, posts: &[Page]) -> String {
+    let site_url = config
+        .blog_url
+        .as_deref()
+        .unwrap_or("")
+        .trim_end_matches('/');
+    let feed_url = absolute_url(site_url, "rss.xml");
+    let description = config
+        .site_description
+        .as_deref()
+        .unwrap_or(&config.site_name);
+    let last_build_date = posts
+        .iter()
+        .filter_map(|post| post.meta.date.as_deref().and_then(format_rss_date))
+        .next()
+        .unwrap_or_else(|| Utc::now().to_rfc2822());
+
+    let mut output = String::new();
+    output.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+    output.push_str("<rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\">\n");
+    output.push_str("  <channel>\n");
+    output.push_str(&format!(
+        "    <title>{}</title>\n",
+        escape_xml(&config.site_name)
+    ));
+    if !site_url.is_empty() {
+        output.push_str(&format!("    <link>{}</link>\n", escape_xml(site_url)));
+    }
+    output.push_str(&format!(
+        "    <description>{}</description>\n",
+        escape_xml(description)
+    ));
+    output.push_str("    <generator>mdBear</generator>\n");
+    output.push_str(&format!(
+        "    <lastBuildDate>{}</lastBuildDate>\n",
+        last_build_date
+    ));
+    if !feed_url.is_empty() {
+        output.push_str(&format!(
+            "    <atom:link href=\"{}\" rel=\"self\" type=\"application/rss+xml\" />\n",
+            escape_xml(&feed_url)
+        ));
+    }
+
+    for post in posts {
+        let title = post.meta.title.as_deref().unwrap_or(&post.slug);
+        let url = absolute_url(site_url, &post.url);
+        output.push_str("    <item>\n");
+        output.push_str(&format!("      <title>{}</title>\n", escape_xml(title)));
+        if !url.is_empty() {
+            output.push_str(&format!("      <link>{}</link>\n", escape_xml(&url)));
+            output.push_str(&format!("      <guid>{}</guid>\n", escape_xml(&url)));
+        } else {
+            output.push_str(&format!("      <guid>{}</guid>\n", escape_xml(&post.url)));
+        }
+        if let Some(date) = post.meta.date.as_deref().and_then(format_rss_date) {
+            output.push_str(&format!("      <pubDate>{}</pubDate>\n", date));
+        }
+        output.push_str(&format!(
+            "      <description><![CDATA[{}]]></description>\n",
+            sanitize_cdata(&post.content_html)
+        ));
+        output.push_str("    </item>\n");
+    }
+
+    output.push_str("  </channel>\n");
+    output.push_str("</rss>\n");
+    output
+}
+
+fn absolute_url(site_url: &str, path: &str) -> String {
+    if site_url.is_empty() {
+        return String::new();
+    }
+    format!("{}/{}", site_url, path.trim_start_matches('/'))
+}
+
+fn format_rss_date(date: &str) -> Option<String> {
+    DateTime::parse_from_rfc3339(date)
+        .map(|date| date.to_rfc2822())
+        .ok()
+        .or_else(|| {
+            NaiveDate::parse_from_str(date, "%Y-%m-%d")
+                .ok()
+                .and_then(|date| date.and_hms_opt(0, 0, 0))
+                .map(|date| Utc.from_utc_datetime(&date).to_rfc2822())
+        })
+}
+
+fn escape_xml(content: &str) -> String {
+    content
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&apos;")
+}
+
+fn sanitize_cdata(content: &str) -> String {
+    content.replace("]]>", "]]]]><![CDATA[>")
 }
 
 pub fn scan_blog_posts(content_dir: &Path) -> Result<Vec<Page>> {
@@ -385,12 +508,7 @@ pub fn scan_blog_posts(content_dir: &Path) -> Result<Vec<Page>> {
                     posts.push(page);
                 }
                 Err(e) => {
-                    eprintln!(
-                        "  {} {}: {}",
-                        "跳过".yellow(),
-                        path.display(),
-                        e
-                    );
+                    eprintln!("  {} {}: {}", "跳过".yellow(), path.display(), e);
                 }
             }
         }
