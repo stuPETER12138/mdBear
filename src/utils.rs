@@ -127,7 +127,8 @@ pub fn load_page(base_content_dir: &Path, file_path: &str, strict_mode: bool) ->
         ));
     }
 
-    let (processed_content, math_blocks) = protect_math(&result.content);
+    let (processed_content, sidenote_blocks) = protect_sidenotes(&result.content);
+    let (processed_content, math_blocks) = protect_math(&processed_content);
     let (processed_content, typst_blocks) = protect_typst(&processed_content);
     let parser = MdParser::new_ext(&processed_content, markdown_options());
     let (events, toc) = collect_toc(parser);
@@ -135,7 +136,7 @@ pub fn load_page(base_content_dir: &Path, file_path: &str, strict_mode: bool) ->
     html::push_html(&mut html_output, events.into_iter());
     let html_output = restore_typst(&html_output, &typst_blocks);
     let html_output = restore_math(&html_output, &math_blocks);
-    let html_output = render_sidenotes(&html_output);
+    let html_output = restore_sidenotes(&html_output, &sidenote_blocks);
     let html_output = render_fontawesome(&html_output);
 
     let re = Regex::new(r#"(src=["'][^"']*)\.(png|jpg|jpeg|gif)(["'])"#).unwrap();
@@ -358,10 +359,63 @@ where
     output
 }
 
-fn render_sidenotes(content: &str) -> String {
-    let re = Regex::new(r#"(?s)\[\^side:\s*(.*?)\]"#).unwrap();
-    re.replace_all(content, r#"<span class="sidenote">$1</span>"#)
-        .to_string()
+fn protect_sidenotes(content: &str) -> (String, Vec<String>) {
+    let mut output = String::new();
+    let mut blocks = Vec::new();
+    let mut rest = content;
+
+    while let Some(start) = rest.find("[^side:") {
+        output.push_str(&rest[..start]);
+        let after_start = &rest[start + "[^side:".len()..];
+
+        if let Some(end) = find_matching_bracket(after_start) {
+            let sidenote_content = after_start[..end].trim().to_string();
+            let index = blocks.len();
+            blocks.push(sidenote_content);
+            output.push_str(&format!("\nMDBEAR_SIDENOTE{}\n", index));
+            rest = &after_start[end + 1..];
+        } else {
+            output.push_str(&rest[start..]);
+            break;
+        }
+    }
+
+    output.push_str(rest);
+    (output, blocks)
+}
+
+fn restore_sidenotes(content: &str, blocks: &[String]) -> String {
+    let mut output = content.to_string();
+    for (index, block) in blocks.iter().enumerate() {
+        let mut inner_html = String::new();
+        let parser = MdParser::new_ext(block, markdown_options());
+        pulldown_cmark::html::push_html(&mut inner_html, parser);
+
+        let placeholder = format!("MDBEAR_SIDENOTE{}", index);
+        let replacement = format!("<aside class=\"sidenote\">{}</aside>", inner_html.trim());
+        output = output.replace(&format!("<p>{}</p>", placeholder), &replacement);
+        output = output.replace(&placeholder, &replacement);
+    }
+    output
+}
+
+fn find_matching_bracket(content: &str) -> Option<usize> {
+    let mut bracket_depth = 0;
+
+    for (i, c) in content.char_indices() {
+        match c {
+            '[' => bracket_depth += 1,
+            ']' => {
+                if bracket_depth == 0 {
+                    return Some(i);
+                }
+                bracket_depth -= 1;
+            }
+            _ => {}
+        }
+    }
+
+    None
 }
 
 fn render_fontawesome(content: &str) -> String {
