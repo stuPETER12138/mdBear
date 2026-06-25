@@ -468,6 +468,27 @@ pre code,
     font-weight: 600;
 }
 
+.sidenote-marker {
+    color: var(--accent);
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1;
+    vertical-align: super;
+    margin-left: 0.15rem;
+    margin-right: 0.1rem;
+    font-family: var(--font-mono);
+}
+
+.sidenote-num {
+    float: left;
+    color: var(--accent);
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 0.35rem;
+    line-height: 1.5;
+    font-family: var(--font-mono);
+}
+
 .toc-card,
 .margin-note {
     max-width: 14rem;

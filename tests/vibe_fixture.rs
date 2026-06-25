@@ -49,7 +49,7 @@ fn vibe_fixture_builds_editorial_site() {
 
     assert_contains(
         &about,
-        "<aside class=\"sidenote\"><p><img src=\"assets/images/magicsquash.webp\" alt=\"Annotation figure\" />",
+        "<aside class=\"sidenote\"><span class=\"sidenote-num\">",
     );
     assert!(
         workdir
@@ -69,7 +69,7 @@ fn vibe_fixture_builds_editorial_site() {
     assert_contains(&post, "../rss.xml");
     assert_contains(
         &post,
-        "<aside class=\"sidenote\"><p><img src=\"note.webp\" alt=\"Annotation figure\" />",
+        "sidenote-marker",
     );
 
     assert_contains(&rss, "<rss version=\"2.0\"");

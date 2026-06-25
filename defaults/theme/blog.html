@@ -2,12 +2,12 @@
 {% block content %}
 <section class="essay blog-index">
     <header class="essay-header">
-        <h1 class="title">Blog</h1>
-        <p class="lead">Articles, notes, and ideas organized by time.</p>
+        <h1 class="title">{% if config.language == "zh" %}博客{% else %}Blog{% endif %}</h1>
+        <p class="lead">{% if config.language == "zh" %}按时间整理的文章、笔记和想法。{% else %}Articles, notes, and ideas organized by time.{% endif %}</p>
     </header>
 
     {% if posts | length == 0 %}
-    <p class="empty-state">No blog posts yet.</p>
+    <p class="empty-state">{% if config.language == "zh" %}暂无博客文章。{% else %}No blog posts yet.{% endif %}</p>
     {% else %}
     <div class="post-list">
         {% for post in posts %}
@@ -22,8 +22,4 @@
     {% endif %}
 </section>
 {% endblock %}
-{% block margin %}
-<div class="margin-note">
-    <p>The right column is reserved for the table of contents, annotations, and contextual notes while reading.</p>
-</div>
-{% endblock %}
+{% block margin %}{% endblock %}

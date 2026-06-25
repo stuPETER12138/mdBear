@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if current_page and current_page.meta.title %}{{ current_page.meta.title }} · {% endif %}{{ config.site_name }}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>{{ config.site_icon }}</text></svg>">
     <link rel="stylesheet" href="{{ root_path }}/style.css">
     <link rel="alternate" type="application/rss+xml" title="{{ config.site_name }} RSS" href="{{ root_path }}/rss.xml">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -28,7 +29,7 @@
                         <a href="{{ root_path }}/{{ item.path | replace(from=".md", to=".html") }}"><i class="fa-solid fa-circle-dot" aria-hidden="true"></i><span>{{ item.name }}</span></a>
                     {% endif %}
                 {% endfor %}
-                <button class="nav-theme-toggle" type="button" aria-label="Toggle theme"><i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i><span>Theme</span></button>
+                <button class="nav-theme-toggle" type="button" aria-label="Toggle theme"><i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i><span>{% if config.language == "zh" %}主题{% else %}Theme{% endif %}</span></button>
             </nav>
         </aside>
 

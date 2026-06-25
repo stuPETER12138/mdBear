@@ -17,6 +17,8 @@ pub struct Config {
     pub site_name: String,
     pub author: String,
     pub output_dir: String,
+    #[serde(default = "default_language")]
+    pub language: String,
     pub blog_url: Option<String>,
     #[serde(default)]
     pub site_description: Option<String>,
@@ -27,6 +29,10 @@ pub struct Config {
     #[serde(default)]
     pub blog: BlogConfig,
     pub nav: Vec<NavItem>,
+}
+
+fn default_language() -> String {
+    "en".to_string()
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
@@ -391,8 +397,12 @@ fn restore_sidenotes(content: &str, blocks: &[String]) -> String {
         let parser = MdParser::new_ext(block, markdown_options());
         pulldown_cmark::html::push_html(&mut inner_html, parser);
 
+        let marker = (index + 1).to_string();
         let placeholder = format!("MDBEAR_SIDENOTE{}", index);
-        let replacement = format!("<aside class=\"sidenote\">{}</aside>", inner_html.trim());
+        let replacement = format!(
+            "<sup class=\"sidenote-marker\">{}</sup><aside class=\"sidenote\"><span class=\"sidenote-num\">{}</span>{}</aside>",
+            marker, marker, inner_html.trim()
+        );
         output = output.replace(&format!("<p>{}</p>", placeholder), &replacement);
         output = output.replace(&placeholder, &replacement);
     }
@@ -467,6 +477,10 @@ pub fn generate_rss(config: &Config, posts: &[Page]) -> String {
     output.push_str(&format!(
         "    <description>{}</description>\n",
         escape_xml(description)
+    ));
+    output.push_str(&format!(
+        "    <managingEditor>{}</managingEditor>\n",
+        escape_xml(&config.author)
     ));
     output.push_str("    <generator>mdBear</generator>\n");
     output.push_str(&format!(

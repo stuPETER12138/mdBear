@@ -2,6 +2,7 @@ site_icon = "🐻"
 site_name = "My Website"
 author = "Your Name"
 output_dir = "mdbear"
+language = "en"  # "en" for English, "zh" for Chinese
 
 [[nav]]
 name = "Home"
