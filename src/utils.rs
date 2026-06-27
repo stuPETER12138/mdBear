@@ -7,7 +7,7 @@ use pulldown_cmark::{CowStr, Event, HeadingLevel, Options, Parser as MdParser, T
 use regex::Regex;
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 
@@ -95,7 +95,12 @@ pub struct DefaultAssets;
 
 // general functions
 
-pub fn load_page(base_content_dir: &Path, file_path: &str, strict_mode: bool) -> Result<Page> {
+pub fn load_page(
+    base_content_dir: &Path,
+    file_path: &str,
+    strict_mode: bool,
+    converted_images: Option<&HashSet<String>>,
+) -> Result<Page> {
     let full_path = base_content_dir.join(file_path);
     let content = fs::read_to_string(&full_path)
         .with_context(|| format!("Cannot read file: {:?}", full_path))?;
@@ -115,11 +120,12 @@ pub fn load_page(base_content_dir: &Path, file_path: &str, strict_mode: bool) ->
         PostMeta::default()
     };
 
-    let stem = Path::new(file_path)
-        .file_stem()
-        .unwrap()
-        .to_str()
-        .unwrap()
+    let normalized_source_path = file_path.replace('\\', "/");
+    let stem = normalized_source_path
+        .rsplit('/')
+        .next()
+        .and_then(|name| name.rsplit_once('.').map(|(stem, _)| stem))
+        .with_context(|| format!("Cannot determine file stem for: {}", file_path))?
         .to_string();
 
     if strict_mode && meta.title.is_none() {
@@ -145,14 +151,24 @@ pub fn load_page(base_content_dir: &Path, file_path: &str, strict_mode: bool) ->
     let html_output = restore_sidenotes(&html_output, &sidenote_blocks);
     let html_output = render_fontawesome(&html_output);
 
-    let re = Regex::new(r#"(src=["'][^"']*)\.(png|jpg|jpeg|gif)(["'])"#).unwrap();
-    let html_output = re.replace_all(&html_output, "${1}.webp${3}").to_string();
+    let re = Regex::new(r#"(?i)(src=["'][^"']*/([^/"']+))\.(png|jpe?g|gif)([^"']*)(["'])"#).unwrap();
+    let html_output = re
+        .replace_all(&html_output, |caps: &regex::Captures| {
+            let stem = caps.get(2).map(|m| m.as_str()).unwrap_or("");
+            if converted_images
+                .map(|set| set.contains(stem))
+                .unwrap_or(true)
+            {
+                // Image was converted (or no tracking info): rewrite to .webp
+                format!("{}.webp{}{}", &caps[1], &caps[4], &caps[5])
+            } else {
+                // Image was NOT converted: keep original reference
+                caps[0].to_string()
+            }
+        })
+        .to_string();
 
-    let url = if stem == "index" && !file_path.contains('/') {
-        "index.html".to_string()
-    } else {
-        format!("{}.html", stem)
-    };
+    let url = page_url_from_source_path(file_path, &stem);
 
     Ok(Page {
         meta,
@@ -161,6 +177,20 @@ pub fn load_page(base_content_dir: &Path, file_path: &str, strict_mode: bool) ->
         slug: stem,
         url,
     })
+}
+
+fn page_url_from_source_path(file_path: &str, stem: &str) -> String {
+    let normalized = file_path.replace('\\', "/");
+    let without_ext = normalized
+        .strip_suffix(".md")
+        .or_else(|| normalized.strip_suffix(".MD"))
+        .unwrap_or(&normalized);
+
+    if stem == "index" && !without_ext.contains('/') {
+        "index.html".to_string()
+    } else {
+        format!("{}.html", without_ext)
+    }
 }
 
 pub fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result<()> {
@@ -401,7 +431,9 @@ fn restore_sidenotes(content: &str, blocks: &[String]) -> String {
         let placeholder = format!("MDBEAR_SIDENOTE{}", index);
         let replacement = format!(
             "<sup class=\"sidenote-marker\">{}</sup><aside class=\"sidenote\"><span class=\"sidenote-num\">{}</span>{}</aside>",
-            marker, marker, inner_html.trim()
+            marker,
+            marker,
+            inner_html.trim()
         );
         output = output.replace(&format!("<p>{}</p>", placeholder), &replacement);
         output = output.replace(&placeholder, &replacement);
@@ -552,7 +584,7 @@ fn sanitize_cdata(content: &str) -> String {
     content.replace("]]>", "]]]]><![CDATA[>")
 }
 
-pub fn scan_blog_posts(content_dir: &Path) -> Result<Vec<Page>> {
+pub fn scan_blog_posts(content_dir: &Path, converted_images: Option<&HashSet<String>>) -> Result<Vec<Page>> {
     let blog_dir = content_dir.join("blog");
     if !blog_dir.exists() {
         return Ok(Vec::new());
@@ -570,9 +602,9 @@ pub fn scan_blog_posts(content_dir: &Path) -> Result<Vec<Page>> {
                 .to_str()
                 .unwrap()
                 .to_string();
-            match load_page(content_dir, &relative, true) {
+            match load_page(content_dir, &relative, true, converted_images) {
                 Ok(mut page) => {
-                    page.url = format!("blog/{}", page.url);
+                    page.url = page.url.replace('\\', "/");
                     posts.push(page);
                 }
                 Err(e) => {
@@ -592,9 +624,10 @@ pub fn scan_blog_posts(content_dir: &Path) -> Result<Vec<Page>> {
     Ok(posts)
 }
 
-pub fn images2webp(src_dir: &Path, dst_dir: &Path) -> Result<()> {
+pub fn images2webp(src_dir: &Path, dst_dir: &Path) -> Result<HashSet<String>> {
+    let mut converted = HashSet::new();
     if !src_dir.exists() {
-        return Ok(());
+        return Ok(converted);
     }
 
     fs::create_dir_all(dst_dir)?;
@@ -607,42 +640,73 @@ pub fn images2webp(src_dir: &Path, dst_dir: &Path) -> Result<()> {
 
         if path.is_dir() {
             let sub_dst = dst_dir.join(entry.file_name());
-            images2webp(&path, &sub_dst)?;
+            let sub_converted = images2webp(&path, &sub_dst)?;
+            converted.extend(sub_converted);
             continue;
         }
 
-        if let Ok(img) = image::open(&path) {
-            let (width, height) = img.dimensions();
+        // Only process common image extensions
+        let ext = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|e| e.to_lowercase())
+            .unwrap_or_default();
+        if !matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "gif") {
+            continue;
+        }
 
-            let resized: DynamicImage = if width > MAX_WIDTH {
-                let new_height = (height as u64 * MAX_WIDTH as u64 / width as u64).max(1) as u32;
-                img.resize(MAX_WIDTH, new_height, Lanczos3)
-            } else {
-                img
-            };
+        let stem = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("")
+            .to_string();
+        if stem.is_empty() {
+            continue;
+        }
 
-            let new_filename = path.file_stem().unwrap().to_str().unwrap().to_string() + ".webp";
-            let dst_path = dst_dir.join(&new_filename);
+        match image::open(&path) {
+            Ok(img) => {
+                let (width, height) = img.dimensions();
 
-            resized.write_to(
-                &mut std::io::BufWriter::new(fs::File::create(&dst_path)?),
-                ImageFormat::WebP,
-            )?;
+                let resized: DynamicImage = if width > MAX_WIDTH {
+                    let new_height = (height as u64 * MAX_WIDTH as u64 / width as u64).max(1) as u32;
+                    img.resize(MAX_WIDTH, new_height, Lanczos3)
+                } else {
+                    img
+                };
 
-            fs::remove_file(&path)?;
+                let new_filename = stem.clone() + ".webp";
+                let dst_path = dst_dir.join(&new_filename);
 
-            println!(
-                "{} {} -> {} ({}x{} -> {}x{})",
-                "Converted:".cyan(),
-                path.display(),
-                dst_path.display(),
-                width,
-                height,
-                resized.width(),
-                resized.height()
-            );
+                resized.write_to(
+                    &mut std::io::BufWriter::new(fs::File::create(&dst_path)?),
+                    ImageFormat::WebP,
+                )?;
+
+                fs::remove_file(&path)?;
+                converted.insert(stem);
+
+                println!(
+                    "{} {} -> {} ({}x{} -> {}x{})",
+                    "Converted:".cyan(),
+                    path.display(),
+                    dst_path.display(),
+                    width,
+                    height,
+                    resized.width(),
+                    resized.height()
+                );
+            }
+            Err(e) => {
+                eprintln!(
+                    "{} {}: {}",
+                    "Warning: could not convert".yellow(),
+                    path.display(),
+                    e
+                );
+            }
         }
     }
 
-    Ok(())
+    Ok(converted)
 }

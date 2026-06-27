@@ -111,9 +111,8 @@ pub async fn execute(port: u16, config_path: &str) -> Result<()> {
     );
 
     let routes = warp::fs::dir(output_dir);
-    warp::serve(routes).run(([127, 0, 0, 1], port)).await;
-
     println!("{}", "Press Ctrl+C to stop".bright_black());
+    warp::serve(routes).run(([127, 0, 0, 1], port)).await;
 
     Ok(())
 }

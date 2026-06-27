@@ -57,4 +57,5 @@ pub enum Commands {
             help = "Path to the project directory to sync theme files"
         )]
         project: String,
-    },}
+    },
+}

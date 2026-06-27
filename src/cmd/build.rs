@@ -1,8 +1,8 @@
 use crate::utils::{Config, copy_dir_all, generate_rss, images2webp, load_page, scan_blog_posts};
-use anyhow::Result;
+use anyhow::{Context, Result, bail};
 use colored::Colorize;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use tera::{Context as TeraContext, Result as TeraResult, Tera, Value};
 
 pub fn execute(config_path: &str) -> Result<()> {
@@ -11,6 +11,7 @@ pub fn execute(config_path: &str) -> Result<()> {
     let output_dir = Path::new(&config.output_dir);
     let content_dir = Path::new("content");
     let theme_dir = Path::new("theme");
+    validate_output_dir(output_dir, content_dir, theme_dir)?;
     println!(
         "{} {}",
         "Building site to".cyan(),
@@ -33,7 +34,7 @@ pub fn execute(config_path: &str) -> Result<()> {
 
     let images_src = output_dir.join("assets");
     let images_dst = output_dir.join("assets");
-    images2webp(&images_src, &images_dst)?;
+    let converted_images = images2webp(&images_src, &images_dst)?;
 
     let fonts_src = theme_dir.join("fonts");
     if fonts_src.exists() {
@@ -60,15 +61,19 @@ pub fn execute(config_path: &str) -> Result<()> {
                 if !full_path.exists() {
                     continue;
                 }
-                let page = load_page(content_dir, &item.path, false)?;
+                let page = load_page(content_dir, &item.path, false, Some(&converted_images))?;
                 let mut ctx = TeraContext::new();
                 ctx.insert("config", &config);
                 ctx.insert("current_page", &page);
                 ctx.insert("content", &page.content_html);
-                ctx.insert("root_path", ".");
+                ctx.insert("root_path", &root_path_for_url(&page.url));
 
                 let render_out = tera.render("page.html", &ctx)?;
-                fs::write(output_dir.join(&page.url), render_out)?;
+                let page_path = output_dir.join(&page.url);
+                if let Some(parent) = page_path.parent() {
+                    fs::create_dir_all(parent)?;
+                }
+                fs::write(page_path, render_out)?;
             }
             "link" => {}
             _ => {}
@@ -76,7 +81,7 @@ pub fn execute(config_path: &str) -> Result<()> {
     }
 
     // Generate blog pages from content/blog/
-    let blog_posts = scan_blog_posts(content_dir)?;
+    let blog_posts = scan_blog_posts(content_dir, Some(&converted_images))?;
     if !blog_posts.is_empty() {
         println!(
             "{} {} {}",
@@ -91,7 +96,7 @@ pub fn execute(config_path: &str) -> Result<()> {
             ctx.insert("config", &config);
             ctx.insert("current_page", &post);
             ctx.insert("content", &post.content_html);
-            ctx.insert("root_path", "..");
+            ctx.insert("root_path", &root_path_for_url(&post.url));
 
             let render_out = tera.render("post.html", &ctx)?;
             let post_path = output_dir.join(&post.url);
@@ -132,6 +137,82 @@ pub fn execute(config_path: &str) -> Result<()> {
 
     println!("{}", "Build success!".green().bold());
     Ok(())
+}
+
+fn validate_output_dir(output_dir: &Path, content_dir: &Path, theme_dir: &Path) -> Result<()> {
+    if output_dir.as_os_str().is_empty() {
+        bail!("output_dir cannot be empty");
+    }
+
+    // Reject obvious dangerous values before canonicalization
+    let output_str = output_dir.to_str().unwrap_or("");
+    if output_str == "." || output_str == ".." || output_str.starts_with("../") {
+        bail!(
+            "Refusing to use '{}' as output_dir (would delete project root)",
+            output_dir.display()
+        );
+    }
+
+    let cwd = std::env::current_dir().context("Failed to resolve current directory")?;
+    let output_abs = absolutize_for_guard(&cwd, output_dir);
+    let protected = [
+        absolutize_for_guard(&cwd, &cwd),
+        absolutize_for_guard(&cwd, Path::new(".")),
+        absolutize_for_guard(&cwd, content_dir),
+        absolutize_for_guard(&cwd, theme_dir),
+    ];
+
+    if protected.iter().any(|path| path == &output_abs) {
+        bail!(
+            "Refusing to use protected directory '{}' as output_dir",
+            output_dir.display()
+        );
+    }
+
+    if !output_abs.starts_with(&cwd) {
+        bail!(
+            "Refusing to write output_dir '{}' outside the project directory",
+            output_dir.display()
+        );
+    }
+
+    Ok(())
+}
+
+fn root_path_for_url(url: &str) -> String {
+    let depth = Path::new(url)
+        .parent()
+        .map(|parent| parent.components().count())
+        .unwrap_or(0);
+
+    if depth == 0 {
+        ".".to_string()
+    } else {
+        std::iter::repeat_n("..", depth)
+            .collect::<Vec<_>>()
+            .join("/")
+    }
+}
+
+fn absolutize_for_guard(cwd: &Path, path: &Path) -> PathBuf {
+    let joined = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        cwd.join(path)
+    };
+
+    let resolved = joined.canonicalize().unwrap_or(joined);
+    let mut normalized = PathBuf::new();
+    for component in resolved.components() {
+        match component {
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                normalized.pop();
+            }
+            _ => normalized.push(component.as_os_str()),
+        }
+    }
+    normalized
 }
 
 fn truncate_filter(

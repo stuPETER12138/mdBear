@@ -1,7 +1,10 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+static TEMP_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 #[test]
 fn vibe_fixture_builds_editorial_site() {
@@ -10,6 +13,7 @@ fn vibe_fixture_builds_editorial_site() {
     let workdir = temp_project_dir();
 
     copy_dir_all(&fixture, &workdir);
+    add_nested_page(&workdir);
 
     let output = Command::new(env!("CARGO_BIN_EXE_mdbear"))
         .arg("build")
@@ -27,6 +31,7 @@ fn vibe_fixture_builds_editorial_site() {
     let index = read_output(&workdir, "index.html");
     let blog = read_output(&workdir, "blog.html");
     let about = read_output(&workdir, "about.html");
+    let guide = read_output(&workdir, "docs/guide.html");
     let post = read_output(&workdir, "blog/tufted-demo.html");
     let rss = read_output(&workdir, "rss.xml");
     let css = read_output(&workdir, "style.css");
@@ -51,6 +56,8 @@ fn vibe_fixture_builds_editorial_site() {
         &about,
         "<aside class=\"sidenote\"><span class=\"sidenote-num\">",
     );
+    assert_contains(&guide, "Nested Guide");
+    assert_contains(&guide, "../style.css");
     assert!(
         workdir
             .join("mdbear")
@@ -67,10 +74,7 @@ fn vibe_fixture_builds_editorial_site() {
     assert_contains(&post, "Hello Typst");
     assert_contains(&post, "fa-solid fa-pen-nib");
     assert_contains(&post, "../rss.xml");
-    assert_contains(
-        &post,
-        "sidenote-marker",
-    );
+    assert_contains(&post, "sidenote-marker");
 
     assert_contains(&rss, "<rss version=\"2.0\"");
     assert_contains(&rss, "<title>Vibe Fixture</title>");
@@ -105,15 +109,74 @@ fn vibe_fixture_builds_editorial_site() {
     fs::remove_dir_all(&workdir).ok();
 }
 
+#[test]
+fn build_rejects_project_root_as_output_dir() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let fixture = root.join("test").join("vibe-demo");
+    let workdir = temp_project_dir();
+
+    copy_dir_all(&fixture, &workdir);
+    let config_path = workdir.join("config.toml");
+    let config = fs::read_to_string(&config_path).expect("failed to read fixture config");
+    let unsafe_config = config
+        .lines()
+        .map(|line| {
+            if line.trim_start().starts_with("output_dir") {
+                "output_dir = \".\""
+            } else {
+                line
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    fs::write(&config_path, unsafe_config).expect("failed to write unsafe fixture config");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_mdbear"))
+        .arg("build")
+        .current_dir(&workdir)
+        .output()
+        .expect("failed to run mdbear build");
+
+    assert!(
+        !output.status.success(),
+        "unsafe build unexpectedly succeeded\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        workdir.join("content").exists(),
+        "build should not delete project content"
+    );
+
+    fs::remove_dir_all(&workdir).ok();
+}
+
+fn add_nested_page(workdir: &Path) {
+    let docs_dir = workdir.join("content").join("docs");
+    fs::create_dir_all(&docs_dir).expect("failed to create nested content directory");
+    fs::write(
+        docs_dir.join("guide.md"),
+        "---\ntitle: Nested Guide\n---\n\n## Nested Heading\n\nNested content.\n",
+    )
+    .expect("failed to write nested page");
+
+    let config_path = workdir.join("config.toml");
+    let mut config = fs::read_to_string(&config_path).expect("failed to read fixture config");
+    config.push_str("\n[[nav]]\nname = \"Guide\"\npath = \"docs/guide.md\"\ntype = \"page\"\n");
+    fs::write(config_path, config).expect("failed to update fixture config");
+}
+
 fn temp_project_dir() -> PathBuf {
-    let millis = SystemTime::now()
+    let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("system clock before unix epoch")
-        .as_millis();
+        .as_nanos();
+    let counter = TEMP_COUNTER.fetch_add(1, Ordering::Relaxed);
     std::env::temp_dir().join(format!(
-        "mdbear-vibe-fixture-{}-{}",
+        "mdbear-vibe-fixture-{}-{}-{}",
         std::process::id(),
-        millis
+        nanos,
+        counter
     ))
 }
 
