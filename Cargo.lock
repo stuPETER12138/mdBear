@@ -1348,6 +1348,7 @@ dependencies = [
  "regex",
  "rust-embed",
  "serde",
+ "serde_json",
  "tera",
  "tokio",
  "toml",

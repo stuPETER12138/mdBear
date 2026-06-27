@@ -87,6 +87,7 @@ pub struct Page {
     pub toc: Vec<TocItem>,
     pub slug: String,
     pub url: String,
+    pub reading_time: usize, // estimated reading time in minutes
 }
 
 #[derive(RustEmbed)]
@@ -170,12 +171,24 @@ pub fn load_page(
 
     let url = page_url_from_source_path(file_path, &stem);
 
+    // Calculate estimated reading time in minutes
+    // Chinese: ~300 characters per minute, English: ~200 words per minute
+    // We count all characters (including Chinese) and divide by 300 for a conservative estimate
+    let plain_text = strip_html_tags(&html_output);
+    let char_count = plain_text.chars().count();
+    let reading_time = if char_count == 0 {
+        1
+    } else {
+        std::cmp::max(1, (char_count + 299) / 300)
+    };
+
     Ok(Page {
         meta,
         content_html: html_output,
         toc,
         slug: stem,
         url,
+        reading_time,
     })
 }
 
@@ -316,12 +329,70 @@ fn unique_slug(title: &str, slugs: &mut HashMap<String, usize>) -> String {
 }
 
 fn protect_math(content: &str) -> (String, Vec<String>) {
-    protect_blocks(content, "$$", "MDBEAR_MATH")
+    let mut output = String::new();
+    let mut blocks = Vec::new();
+    let mut rest = content;
+
+    // Handle block math $$...$$ first, then inline $...$
+    while let Some(start) = rest.find("$$") {
+        output.push_str(&rest[..start]);
+        let after_start = &rest[start + "$$".len()..];
+        if let Some(end) = after_start.find("$$") {
+            let block = format!("{}{}{}", "$$", &after_start[..end], "$$");
+            let index = blocks.len();
+            blocks.push(block);
+            output.push_str(&format!("\nMDBEAR_MATH{}\n", index));
+            rest = &after_start[end + "$$".len()..];
+        } else {
+            output.push_str(&rest[start..]);
+            rest = "";
+            break;
+        }
+    }
+    // Handle inline math $...$ in the remaining content
+    let mut remaining = rest;
+    while let Some(start) = remaining.find('$') {
+        if start > 0 && remaining.chars().nth(start - 1) == Some('\\') {
+            // Escaped dollar sign, keep it
+            output.push_str(&remaining[..start - 1]);
+            output.push('$');
+            remaining = &remaining[start + 1..];
+            continue;
+        }
+        output.push_str(&remaining[..start]);
+        let after_start = &remaining[start + 1..];
+        if let Some(end) = after_start.find('$') {
+            // Make sure it's not empty and doesn't contain spaces at start/end
+            let block = format!("${}$", &after_start[..end].trim());
+            let index = blocks.len();
+            blocks.push(block);
+            output.push_str(&format!("MDBEAR_MATH{}", index));
+            remaining = &after_start[end + 1..];
+        } else {
+            output.push('$');
+            output.push_str(&after_start);
+            remaining = "";
+            break;
+        }
+    }
+    output.push_str(remaining);
+
+    (output, blocks)
 }
 
 fn restore_math(content: &str, blocks: &[String]) -> String {
     restore_blocks(content, blocks, "MDBEAR_MATH", |block| {
-        format!("<div class=\"math-block\">{}</div>", block)
+        if block.starts_with("$$") && block.ends_with("$$") {
+            // Block math
+            let inner = block.strip_prefix("$$").unwrap().strip_suffix("$$").unwrap();
+            format!("<div class=\"math-block\" data-katex-block>{}</div>", escape_html(inner))
+        } else if block.starts_with('$') && block.ends_with('$') {
+            // Inline math
+            let inner = block.strip_prefix('$').unwrap().strip_suffix('$').unwrap();
+            format!("<span class=\"math-inline\" data-katex-inline>{}</span>", escape_html(inner))
+        } else {
+            format!("<div class=\"math-block\">{}</div>", escape_html(block))
+        }
     })
 }
 
@@ -356,31 +427,6 @@ fn restore_typst(content: &str, blocks: &[String]) -> String {
             escape_html(block)
         )
     })
-}
-
-fn protect_blocks(content: &str, delimiter: &str, prefix: &str) -> (String, Vec<String>) {
-    let mut output = String::new();
-    let mut blocks = Vec::new();
-    let mut rest = content;
-
-    while let Some(start) = rest.find(delimiter) {
-        output.push_str(&rest[..start]);
-        let after_start = &rest[start + delimiter.len()..];
-        if let Some(end) = after_start.find(delimiter) {
-            let block = format!("{}{}{}", delimiter, &after_start[..end], delimiter);
-            let index = blocks.len();
-            blocks.push(block);
-            output.push_str(&format!("\n{}{}\n", prefix, index));
-            rest = &after_start[end + delimiter.len()..];
-        } else {
-            output.push_str(&rest[start..]);
-            rest = "";
-            break;
-        }
-    }
-
-    output.push_str(rest);
-    (output, blocks)
 }
 
 fn restore_blocks<F>(content: &str, blocks: &[String], prefix: &str, render: F) -> String
@@ -709,4 +755,20 @@ pub fn images2webp(src_dir: &Path, dst_dir: &Path) -> Result<HashSet<String>> {
     }
 
     Ok(converted)
+}
+
+/// Very simple HTML tag stripper for reading time calculation
+pub fn strip_html_tags(html: &str) -> String {
+    let mut result = String::new();
+    let mut in_tag = false;
+    for c in html.chars() {
+        match c {
+            '<' => in_tag = true,
+            '>' => in_tag = false,
+            c if !in_tag => result.push(c),
+            _ => {}
+        }
+    }
+    // Collapse multiple whitespace
+    result.split_whitespace().collect::<Vec<_>>().join(" ")
 }

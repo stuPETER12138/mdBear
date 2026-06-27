@@ -5,12 +5,128 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if current_page and current_page.meta.title %}{{ current_page.meta.title }} · {% endif %}{{ config.site_name }}</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>{{ config.site_icon }}</text></svg>">
+    <script>document.documentElement.dataset.theme = localStorage.getItem('mdbear-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');</script>
     <link rel="stylesheet" href="{{ root_path }}/style.css">
     <link rel="alternate" type="application/rss+xml" title="{{ config.site_name }} RSS" href="{{ root_path }}/rss.xml">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <!-- Prism.js syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <style>
+        /* Adapt Prism to our theme colors */
+        html[data-theme="light"] pre[class*=language-] {
+            background: color-mix(in srgb, var(--paper), var(--ink) 4%) !important;
+        }
+        html[data-theme="dark"] pre[class*=language-] {
+            background: color-mix(in srgb, var(--paper), var(--ink) 4%) !important;
+        }
+        .token.comment,
+        .token.prolog,
+        .token.doctype,
+        .token.cdata {
+            color: var(--muted);
+        }
+        .token.punctuation {
+            color: var(--muted);
+        }
+        .token.namespace {
+            opacity: .7;
+        }
+        .token.property,
+        .token.tag,
+        .token.boolean,
+        .token.constant,
+        .token.symbol,
+        .token.deleted {
+            color: var(--accent);
+        }
+        .token.attr-name,
+        .token.string,
+        .token.inserted {
+            color: var(--accent);
+            opacity: 0.8;
+        }
+        .token.operator,
+        .token.entity,
+        .token.url,
+        .token.variable {
+            color: var(--ink);
+        }
+        .token.atrule,
+        .token.attr-value,
+        .token.keyword {
+            color: var(--accent);
+            font-weight: 600;
+        }
+        .token.function,
+        .token.class-name {
+            color: var(--ink);
+        }
+        .token.regex,
+        .token.important,
+        .token.variable {
+            color: var(--ink);
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script defer>
+        // Auto-highlight after page load
+        document.addEventListener('DOMContentLoaded', () => {
+            Prism?.highlightAll();
+        });
+    </script>
+    <!-- MiniSearch for full-text search -->
+    <script src="https://cdn.jsdelivr.net/npm/minisearch@7.1.1/dist/umd/index.min.js"></script>
+    <!-- KaTeX for math typesetting -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body);"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '\\(', right: '\\)', display: false}
+                ],
+                throwOnError: false,
+                strict: 'ignore'
+            });
+        });
+    </script>
+    <!-- Lightbox2 for image gallery -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightbox2@2.11.4/dist/css/lightbox.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/lightbox2@2.11.4/dist/js/lightbox.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-wrap images with lightbox links
+            document.querySelectorAll('.content img:not([data-no-lightbox])').forEach(function(img) {
+                if (img.parentElement.tagName !== 'A') {
+                    const a = document.createElement('a');
+                    a.href = img.src;
+                    a.setAttribute('data-lightbox', 'blog-gallery');
+                    if (img.alt) {
+                        a.setAttribute('data-title', img.alt);
+                    }
+                    img.parentNode.insertBefore(a, img);
+                    a.appendChild(img);
+                }
+            });
+            // Configure lightbox
+            lightbox.option({
+                'resizeDuration': 200,
+                'wrapAround': true,
+                'alwaysShowNavOnTouchDevices': true
+            });
+        });
+    </script>
 </head>
 
 <body>
+    <div class="reading-progress-bar-container">
+        <div class="reading-progress-bar" id="readingProgress"></div>
+    </div>
     <div class="site-shell">
         <aside class="site-rail" aria-label="Site navigation">
             <nav class="rail-nav immersive-light">
@@ -41,18 +157,59 @@
             {% block margin %}{% endblock %}
         </aside>
     </div>
+    <button id="backToTop" class="back-to-top" aria-label="Back to top">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
     <script>
+        // Theme toggle
         const themeToggle = document.querySelector('.nav-theme-toggle');
-        const savedTheme = localStorage.getItem('mdbear-theme');
-        if (savedTheme) {
-            document.documentElement.dataset.theme = savedTheme;
-        }
-        themeToggle?.addEventListener('click', () => {
+        themeToggle?.addEventListener('click', async () => {
             const current = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             const next = current === 'dark' ? 'light' : 'dark';
-            document.documentElement.dataset.theme = next;
-            localStorage.setItem('mdbear-theme', next);
+            // Activate theme transition (only on toggle, not on page load)
+            document.documentElement.classList.add('theme-transitioning');
+
+            function completeTransition() {
+                document.documentElement.dataset.theme = next;
+                localStorage.setItem('mdbear-theme', next);
+            }
+
+            // Use View Transition API for smooth crossfade
+            if (document.startViewTransition) {
+                try {
+                    const transition = document.startViewTransition(completeTransition);
+                    await transition.finished;
+                } catch (e) {
+                    // Fallback if transition fails
+                    completeTransition();
+                }
+            } else {
+                completeTransition();
+            }
+
+            // Remove transition class after animation completes
+            setTimeout(() => document.documentElement.classList.remove('theme-transitioning'), 600);
         });
+
+        // Active nav highlight — resolve relative hrefs to compare with current path
+        const currentPath = window.location.pathname.replace(/\/$/, '') || '/index.html';
+        const navLinks = document.querySelectorAll('.rail-nav a');
+        navLinks.forEach((link) => {
+            const href = link.getAttribute('href');
+            if (!href) return;
+            // Resolve relative href like "./index.html" or "../blog.html" to absolute
+            const a = document.createElement('a');
+            a.href = href;
+            const resolved = a.pathname.replace(/\/$/, '') || '/index.html';
+            const isMatch = resolved === currentPath ||
+                (resolved.endsWith('/blog.html') && currentPath.startsWith(resolved.replace('blog.html', 'blog/')));
+            if (isMatch) {
+                link.classList.add('active');
+                link.setAttribute('aria-current', 'page');
+            }
+        });
+
+        // Immersive light effect
         document.querySelectorAll('.immersive-light').forEach((surface) => {
             surface.addEventListener('pointermove', (event) => {
                 const rect = surface.getBoundingClientRect();
@@ -64,7 +221,235 @@
                 delete surface.dataset.glowing;
             });
         });
+
+        // TOC current section highlighting with IntersectionObserver
+        if ('IntersectionObserver' in window) {
+            const tocLinks = document.querySelectorAll('.toc-card a');
+            if (tocLinks.length > 0) {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+                    if (entries[0].isIntersecting) {
+                        const id = entries[0].target.id;
+                        tocLinks.forEach((link) => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === `#${id}`) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                }, {
+                    rootMargin: '-10% 0px -60% 0px',
+                    threshold: [0, 0.1, 1]
+                });
+
+                // Observe all heading anchors
+                document.querySelectorAll('.heading-anchor[id]').forEach((anchor) => {
+                    observer.observe(anchor);
+                });
+            }
+        }
+
+        // Reading progress bar
+        const progressBar = document.getElementById('readingProgress');
+        if (progressBar && document.querySelector('.essay')) {
+            const updateProgress = () => {
+                const essay = document.querySelector('.essay');
+                const rect = essay.getBoundingClientRect();
+                const essayTop = rect.top + window.scrollY;
+                const essayHeight = essay.height;
+                const windowHeight = window.innerHeight;
+                const scrollPosition = window.scrollY;
+                // Calculate progress when essay enters viewport until it exits
+                const progress = Math.max(0, Math.min(100,
+                    ((scrollPosition + windowHeight) - essayTop) / essayHeight * 100
+                ));
+                progressBar.style.width = `${progress}%`;
+            };
+            window.addEventListener('scroll', updateProgress, { passive: true });
+            window.addEventListener('resize', updateProgress);
+            document.addEventListener('DOMContentLoaded', updateProgress);
+        }
+
+        // Full-text search with MiniSearch is now handled in-page on blog.html
+
+        // Back to top button
+        (function() {
+            const btn = document.getElementById('backToTop');
+            if (!btn) return;
+
+            const toggleVisibility = () => {
+                if (window.scrollY > 300) {
+                    btn.classList.add('visible');
+                } else {
+                    btn.classList.remove('visible');
+                }
+            };
+
+            window.addEventListener('scroll', toggleVisibility, { passive: true });
+            btn.addEventListener('click', () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+            toggleVisibility();
+        })();
+
+        // Code block copy button
+        (function() {
+            document.addEventListener('DOMContentLoaded', () => {
+                document.querySelectorAll('pre code').forEach((codeBlock) => {
+                    const pre = codeBlock.parentElement;
+                    if (!pre || pre.querySelector('.copy-button')) return;
+
+                    const button = document.createElement('button');
+                    button.className = 'copy-button';
+                    button.setAttribute('aria-label', 'Copy code');
+                    button.innerHTML = '<i class="fa-regular fa-copy"></i>';
+
+                    button.addEventListener('click', async () => {
+                        // Get text content (excluding the button itself)
+                        const code = codeBlock.textContent || '';
+                        try {
+                            await navigator.clipboard.writeText(code);
+                            button.innerHTML = '<i class="fa-solid fa-check"></i>';
+                            button.classList.add('copied');
+                            setTimeout(() => {
+                                button.innerHTML = '<i class="fa-regular fa-copy"></i>';
+                                button.classList.remove('copied');
+                            }, 2000);
+                        } catch (err) {
+                            console.error('Failed to copy:', err);
+                            button.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                            setTimeout(() => {
+                                button.innerHTML = '<i class="fa-regular fa-copy"></i>';
+                            }, 2000);
+                        }
+                    });
+
+                    pre.appendChild(button);
+                });
+
+                // Process external links to open in new tab
+                document.querySelectorAll('.content a').forEach((link) => {
+                    const href = link.getAttribute('href');
+                    if (!href) return;
+                    // If it's an external link (starts with http://, https://, or //)
+                    if (href.match(/^https?:\/\//) || href.match(/^\/\//)) {
+                        if (!link.getAttribute('target')) {
+                            link.setAttribute('target', '_blank');
+                            link.setAttribute('rel', 'noopener noreferrer');
+                        }
+                    }
+                });
+            });
+        })();
+
+// Blog page in-page search
+(function() {
+    const searchInput = document.getElementById('blogSearchInput');
+    const resultsContainer = document.getElementById('blogSearchResults');
+    const originalList = document.getElementById('originalPostList');
+    if (!searchInput || !resultsContainer) return;
+
+    let miniSearch = null;
+    let documents = null;
+    let loaded = false;
+
+    function loadSearchIndex(callback) {
+        if (loaded) {
+            callback();
+            return;
+        }
+        const rootPath = (function() {
+            const currentPath = window.location.pathname.replace(/\/$/, '') || '/index.html';
+            const depth = currentPath.split('/').length - 1;
+            if (depth === 0) return '.';
+            return Array(depth).fill('..').join('/');
+        })();
+        fetch(`${rootPath}/search_index.json`)
+            .then(r => r.json())
+            .then(data => {
+                documents = data;
+                if (window.MiniSearch) {
+                    miniSearch = new MiniSearch({
+                        fields: ['title', 'content'],
+                        storeFields: ['title', 'date', 'url'],
+                        searchOptions: {
+                            boost: { title: 2 },
+                            prefix: true,
+                            fuzzy: 0.2
+                        }
+                    });
+                    miniSearch.addAll(data.map((doc, idx) => ({
+                        id: idx,
+                        title: doc.title || '',
+                        date: doc.date || '',
+                        url: doc.url,
+                        content: doc.content
+                    })));
+                }
+                loaded = true;
+                callback();
+            })
+            .catch(() => {
+                // Silently fail - original list remains visible
+            });
+    }
+
+    function performSearch(query) {
+        if (!miniSearch || !documents) {
+            resultsContainer.classList.remove('active');
+            if (originalList) originalList.style.display = '';
+            return;
+        }
+        if (query.length < 2) {
+            resultsContainer.classList.remove('active');
+            resultsContainer.innerHTML = '';
+            if (originalList) originalList.style.display = '';
+            return;
+        }
+
+        const results = miniSearch.search(query, { limit: 10 });
+        resultsContainer.innerHTML = '';
+        resultsContainer.classList.add('active');
+        if (originalList) originalList.style.display = 'none';
+
+        if (results.length === 0) {
+            resultsContainer.innerHTML = `<div class="blog-search-empty">{% if config.language == "zh" %}没有找到相关文章{% else %}No matching articles found{% endif %}</div>`;
+            return;
+        }
+
+        const rootPath = (function() {
+            const currentPath = window.location.pathname.replace(/\/$/, '') || '/index.html';
+            const depth = currentPath.split('/').length - 1;
+            if (depth === 0) return '.';
+            return Array(depth).fill('..').join('/');
+        })();
+
+        results.forEach(result => {
+            const doc = documents[result.id];
+            const a = document.createElement('a');
+            a.className = 'blog-search-result-item';
+            a.href = `${rootPath}/${doc.url}`;
+            a.innerHTML = `
+                <h4 class="blog-search-result-title">${doc.title || 'Untitled'}</h4>
+                ${doc.date ? `<p class="blog-search-result-date">${doc.date}</p>` : ''}
+                ${result.score > 0.5 ? `<p class="blog-search-result-preview">${(doc.content || '').substring(0, 120)}...</p>` : ''}
+            `;
+            resultsContainer.appendChild(a);
+        });
+    }
+
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.trim();
+        if (!loaded && query.length >= 2) {
+            loadSearchIndex(() => performSearch(query));
+        } else {
+            performSearch(query);
+        }
+    });
+})();
     </script>
 </body>
-
 </html>

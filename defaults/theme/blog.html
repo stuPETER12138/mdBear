@@ -6,6 +6,16 @@
         <p class="lead">{% if config.language == "zh" %}按时间整理的文章、笔记和想法。{% else %}Articles, notes, and ideas organized by time.{% endif %}</p>
     </header>
 
+    <!-- In-page search box -->
+    <div class="blog-search">
+        <div class="blog-search-input-wrapper">
+            <i class="fa-solid fa-magnifying-glass blog-search-icon"></i>
+            <input type="text" id="blogSearchInput" placeholder="{% if config.language == "zh" %}搜索文章...{% else %}Search articles...{% endif %}" autocomplete="off">
+        </div>
+        <div id="blogSearchResults" class="blog-search-results"></div>
+    </div>
+
+    <div id="originalPostList">
     {% if posts | length == 0 %}
     <p class="empty-state">{% if config.language == "zh" %}暂无博客文章。{% else %}No blog posts yet.{% endif %}</p>
     {% else %}
@@ -20,6 +30,7 @@
         {% endfor %}
     </div>
     {% endif %}
+    </div>
 </section>
 {% endblock %}
 {% block margin %}{% endblock %}

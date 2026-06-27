@@ -1,6 +1,7 @@
 use crate::utils::{Config, copy_dir_all, generate_rss, images2webp, load_page, scan_blog_posts};
 use anyhow::{Context, Result, bail};
 use colored::Colorize;
+use serde::{Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use tera::{Context as TeraContext, Result as TeraResult, Tera, Value};
@@ -67,6 +68,7 @@ pub fn execute(config_path: &str) -> Result<()> {
                 ctx.insert("current_page", &page);
                 ctx.insert("content", &page.content_html);
                 ctx.insert("root_path", &root_path_for_url(&page.url));
+                ctx.insert("current_url", &page.url);
 
                 let render_out = tera.render("page.html", &ctx)?;
                 let page_path = output_dir.join(&page.url);
@@ -97,6 +99,7 @@ pub fn execute(config_path: &str) -> Result<()> {
             ctx.insert("current_page", &post);
             ctx.insert("content", &post.content_html);
             ctx.insert("root_path", &root_path_for_url(&post.url));
+            ctx.insert("current_url", &post.url);
 
             let render_out = tera.render("post.html", &ctx)?;
             let post_path = output_dir.join(&post.url);
@@ -116,6 +119,7 @@ pub fn execute(config_path: &str) -> Result<()> {
         ctx.insert("config", &config);
         ctx.insert("posts", &blog_posts);
         ctx.insert("root_path", ".");
+        ctx.insert("current_url", "blog.html");
 
         let render_out = tera.render("blog.html", &ctx)?;
         let blog_path = output_dir.join("blog.html");
@@ -133,10 +137,57 @@ pub fn execute(config_path: &str) -> Result<()> {
             "Generated RSS feed:".green(),
             rss_path.display().to_string().green()
         );
+
+        // Generate search index JSON for full-text search
+        if !blog_posts.is_empty() {
+            #[derive(Serialize)]
+            struct SearchDocument {
+                title: Option<String>,
+                date: Option<String>,
+                url: String,
+                content: String,
+            }
+
+            let mut search_docs = Vec::new();
+            for post in &blog_posts {
+                let plain_content = strip_html_tags(&post.content_html);
+                search_docs.push(SearchDocument {
+                    title: post.meta.title.clone(),
+                    date: post.meta.date.clone(),
+                    url: post.url.clone(),
+                    content: plain_content,
+                });
+            }
+
+            let search_json = serde_json::to_string_pretty(&search_docs)?;
+            let search_index_path = output_dir.join("search_index.json");
+            fs::write(&search_index_path, search_json)?;
+            println!(
+                "  {} {}",
+                "Generated search index:".green(),
+                search_index_path.display().to_string().green()
+            );
+        }
     }
 
     println!("{}", "Build success!".green().bold());
     Ok(())
+}
+
+/// Very simple HTML tag stripper for search indexing
+fn strip_html_tags(html: &str) -> String {
+    let mut result = String::new();
+    let mut in_tag = false;
+    for c in html.chars() {
+        match c {
+            '<' => in_tag = true,
+            '>' => in_tag = false,
+            c if !in_tag => result.push(c),
+            _ => {}
+        }
+    }
+    // Collapse multiple whitespace
+    result.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 fn validate_output_dir(output_dir: &Path, content_dir: &Path, theme_dir: &Path) -> Result<()> {
@@ -154,9 +205,10 @@ fn validate_output_dir(output_dir: &Path, content_dir: &Path, theme_dir: &Path) 
     }
 
     let cwd = std::env::current_dir().context("Failed to resolve current directory")?;
+    let cwd_abs = absolutize_for_guard(&cwd, &cwd);
     let output_abs = absolutize_for_guard(&cwd, output_dir);
     let protected = [
-        absolutize_for_guard(&cwd, &cwd),
+        cwd_abs.clone(),
         absolutize_for_guard(&cwd, Path::new(".")),
         absolutize_for_guard(&cwd, content_dir),
         absolutize_for_guard(&cwd, theme_dir),
@@ -169,7 +221,7 @@ fn validate_output_dir(output_dir: &Path, content_dir: &Path, theme_dir: &Path) 
         );
     }
 
-    if !output_abs.starts_with(&cwd) {
+    if !output_abs.starts_with(&cwd_abs) {
         bail!(
             "Refusing to write output_dir '{}' outside the project directory",
             output_dir.display()

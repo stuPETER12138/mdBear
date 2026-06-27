@@ -2,7 +2,7 @@
     font-family: "HarmonyOS Sans";
     font-style: normal;
     font-weight: 100 900;
-    src: local("HarmonyOS Sans"), url("/fonts/HarmonyOS_Sans_Regular.woff2") format("woff2");
+    src: local("HarmonyOS Sans"), url("fonts/HarmonyOS_Sans_Regular.woff2") format("woff2");
     font-display: swap;
 }
 
@@ -10,18 +10,68 @@
     font-family: "Noto Color Emoji";
     font-style: normal;
     font-weight: 400;
-    src: local("Noto Color Emoji"), url("/fonts/NotoColorEmoji-Regular.ttf") format("truetype");
+    src: local("Noto Color Emoji"), url("fonts/NotoColorEmoji-Regular.ttf") format("truetype");
     font-display: swap;
 }
 
+/* Register theme colors as animatable properties */
+@property --theme-bg {
+    syntax: '<color>';
+    initial-value: #f6f4ef;
+    inherits: true;
+}
+
+@property --theme-paper {
+    syntax: '<color>';
+    initial-value: #fffdf8;
+    inherits: true;
+}
+
+@property --theme-ink {
+    syntax: '<color>';
+    initial-value: #262522;
+    inherits: true;
+}
+
+@property --theme-muted {
+    syntax: '<color>';
+    initial-value: #767069;
+    inherits: true;
+}
+
+@property --theme-line {
+    syntax: '<color>';
+    initial-value: #ded8cf;
+    inherits: true;
+}
+
+@property --theme-accent {
+    syntax: '<color>';
+    initial-value: #8f4f36;
+    inherits: true;
+}
+
+@property --theme-accent-soft {
+    syntax: '<color>';
+    initial-value: #ead7cc;
+    inherits: true;
+}
+
 :root {
-    --bg: #f6f4ef;
-    --paper: #fffdf8;
-    --ink: #262522;
-    --muted: #767069;
-    --line: #ded8cf;
-    --accent: #8f4f36;
-    --accent-soft: #ead7cc;
+    --theme-bg: #f6f4ef;
+    --theme-paper: #fffdf8;
+    --theme-ink: #262522;
+    --theme-muted: #767069;
+    --theme-line: #ded8cf;
+    --theme-accent: #8f4f36;
+    --theme-accent-soft: #ead7cc;
+    --bg: var(--theme-bg);
+    --paper: var(--theme-paper);
+    --ink: var(--theme-ink);
+    --muted: var(--theme-muted);
+    --line: var(--theme-line);
+    --accent: var(--theme-accent);
+    --accent-soft: var(--theme-accent-soft);
     --rail: rgba(255, 253, 248, 0.64);
     --light-core: rgba(255, 244, 219, 0.82);
     --light-halo: rgba(217, 157, 126, 0.32);
@@ -33,19 +83,33 @@
     --font-mono: "SFMono-Regular", Consolas, monospace;
 }
 
+/* Transition only applies when .theme-transitioning class is active (set by JS on toggle) */
+html.theme-transitioning {
+    transition: --theme-bg 0.5s ease, --theme-paper 0.5s ease, --theme-ink 0.5s ease,
+                --theme-muted 0.5s ease, --theme-line 0.5s ease, --theme-accent 0.5s ease,
+                --theme-accent-soft 0.5s ease,
+                --rail 0.5s ease, --light-core 0.5s ease, --light-halo 0.5s ease,
+                --light-edge 0.5s ease, --light-shadow 0.5s ease, --shadow 0.5s ease,
+                background-color 0.5s ease, color 0.5s ease;
+}
+
 html[data-theme="light"] {
     color-scheme: light;
 }
 
+html:not([data-theme]) {
+    color-scheme: light dark;
+}
+
 html[data-theme="dark"] {
     color-scheme: dark;
-    --bg: #191917;
-    --paper: #20201d;
-    --ink: #eee9df;
-    --muted: #aaa297;
-    --line: #393630;
-    --accent: #d99d7e;
-    --accent-soft: #3a2b24;
+    --theme-bg: #191917;
+    --theme-paper: #20201d;
+    --theme-ink: #eee9df;
+    --theme-muted: #aaa297;
+    --theme-line: #393630;
+    --theme-accent: #d99d7e;
+    --theme-accent-soft: #3a2b24;
     --rail: rgba(32, 32, 29, 0.62);
     --light-core: rgba(255, 207, 155, 0.22);
     --light-halo: rgba(217, 157, 126, 0.22);
@@ -56,13 +120,13 @@ html[data-theme="dark"] {
 
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-        --bg: #191917;
-        --paper: #20201d;
-        --ink: #eee9df;
-        --muted: #aaa297;
-        --line: #393630;
-        --accent: #d99d7e;
-        --accent-soft: #3a2b24;
+        --theme-bg: #191917;
+        --theme-paper: #20201d;
+        --theme-ink: #eee9df;
+        --theme-muted: #aaa297;
+        --theme-line: #393630;
+        --theme-accent: #d99d7e;
+        --theme-accent-soft: #3a2b24;
         --rail: rgba(32, 32, 29, 0.62);
         --light-core: rgba(255, 207, 155, 0.22);
         --light-halo: rgba(217, 157, 126, 0.22);
@@ -78,16 +142,37 @@ html[data-theme="dark"] {
 
 html {
     scroll-behavior: smooth;
+    transition: background-color 0.5s ease, color 0.5s ease;
 }
 
 body {
     min-height: 100dvh;
     margin: 0;
     color: var(--ink);
-    background: linear-gradient(135deg, var(--bg), var(--paper));
+    background: var(--bg);
     font-family: var(--font-main);
     font-size: 16px;
     line-height: 1.72;
+    transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+/* Reading progress bar */
+.reading-progress-bar-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    z-index: 100;
+    background: transparent;
+}
+
+.reading-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    transition: width 0.1s linear;
 }
 
 body::before {
@@ -120,6 +205,7 @@ body::after {
     min-height: 100dvh;
     margin: 0 auto;
     padding: clamp(1rem, 3vw, 3rem);
+    transition: background-color 0.5s ease, color 0.5s ease;
 }
 
 .page-margin {
@@ -206,6 +292,7 @@ body::after {
     width: 4.1rem;
     padding: 0.52rem 0.36rem;
     border-radius: 999px;
+    transition: background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
 }
 
 .rail-nav a,
@@ -241,6 +328,16 @@ body::after {
     transform: translateY(-1px);
 }
 
+.nav-theme-toggle:active i {
+    transform: rotate(180deg);
+    transition: transform 0.4s ease;
+}
+
+.rail-nav a.active {
+    color: var(--ink);
+    font-weight: 600;
+}
+
 .nav-theme-toggle:active,
 .rail-nav a:active {
     transform: translateY(1px);
@@ -267,6 +364,7 @@ body::after {
     font-weight: 500;
     letter-spacing: -0.06em;
     line-height: 0.95;
+    transition: color 0.5s ease;
 }
 
 .meta,
@@ -301,6 +399,44 @@ table {
     margin: 0 0 1.45rem;
 }
 
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-main);
+    font-size: 0.88rem;
+    line-height: 1.6;
+}
+
+thead {
+    background: color-mix(in srgb, var(--paper), var(--ink) 3%);
+}
+
+th,
+td {
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+}
+
+th {
+    color: var(--ink);
+    font-weight: 600;
+}
+
+td {
+    color: var(--muted);
+}
+
+tr:nth-child(even) td {
+    background: color-mix(in srgb, var(--paper), var(--ink) 1.5%);
+}
+
+th,
+td {
+    transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease;
+}
+
 h1,
 h2,
 h3,
@@ -310,6 +446,8 @@ h4 {
     color: var(--ink);
     font-family: var(--font-main);
     line-height: 1.16;
+    scroll-margin-top: 6rem;
+    transition: color 0.5s ease;
 }
 
 h2 {
@@ -325,6 +463,7 @@ h3 {
     position: relative;
     top: -6rem;
     display: block;
+    visibility: hidden;
 }
 
 a {
@@ -344,6 +483,7 @@ img {
     margin: 2rem auto;
     border-radius: 1.25rem;
     box-shadow: var(--shadow);
+    transition: box-shadow 0.3s ease;
 }
 
 blockquote {
@@ -352,6 +492,7 @@ blockquote {
     border-left: 2px solid var(--accent);
     color: var(--muted);
     font-size: 1rem;
+    transition: border-color 0.5s ease, color 0.5s ease;
 }
 
 code,
@@ -378,6 +519,7 @@ pre,
     background: color-mix(in srgb, var(--paper), var(--ink) 4%);
     font-size: 0.84rem;
     line-height: 1.55;
+    transition: background-color 0.5s ease, border-color 0.5s ease;
 }
 
 pre code,
@@ -417,6 +559,7 @@ pre code,
     line-height: 1.55;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    transition: border-color 0.5s ease, color 0.5s ease;
 }
 
 .sidenote p {
@@ -501,6 +644,7 @@ pre code,
     margin-top: clamp(2rem, 5vw, 5rem);
     padding: 0.78rem 0.86rem;
     border-radius: 1.1rem;
+    transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease;
 }
 
 .margin-note {
@@ -549,6 +693,11 @@ pre code,
     color: var(--accent);
 }
 
+.toc-card a.active {
+    color: var(--accent);
+    font-weight: 600;
+}
+
 .toc-level-3 {
     padding-left: 1rem;
     font-size: 0.78rem;
@@ -557,6 +706,7 @@ pre code,
 .breadcrumb {
     padding-top: clamp(2rem, 5vw, 5rem);
     font-size: 0.86rem;
+    transition: color 0.5s ease;
 }
 
 .breadcrumb a {
@@ -571,6 +721,7 @@ pre code,
 .post-item {
     padding: 1.15rem 0;
     border-top: 1px solid var(--line);
+    transition: border-color 0.5s ease;
 }
 
 .post-item h2 {
@@ -700,4 +851,223 @@ pre code,
         scroll-behavior: auto !important;
         transition: none !important;
     }
+}
+
+/* KaTeX adaptation */
+.math-inline .katex {
+    color: var(--ink);
+}
+.math-block .katex-display {
+    margin: 0;
+    padding: 0.5rem 0;
+}
+.katex {
+    color: var(--ink);
+}
+
+/* Lightbox adaptation */
+.lb-data .lb-caption {
+    color: #fff;
+}
+.lb-data .lb-number {
+    color: #fff;
+}
+.lb-close {
+    filter: invert(100%);
+}
+
+/* Back to top button */
+.back-to-top {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--rail);
+    backdrop-filter: blur(18px);
+    box-shadow: var(--shadow);
+    color: var(--muted);
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease, color 0.2s ease, background-color 0.5s ease;
+    z-index: 50;
+}
+
+.back-to-top.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.back-to-top:hover {
+    color: var(--ink);
+}
+
+.back-to-top i {
+    font-size: 1.2rem;
+    color: var(--accent);
+}
+
+@media (max-width: 1080px) {
+    .back-to-top {
+        bottom: 5rem;
+        right: 1rem;
+        width: 2.75rem;
+        height: 2.75rem;
+    }
+}
+
+/* Code block copy button */
+pre {
+    position: relative;
+}
+
+pre .copy-button {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    background: var(--rail);
+    backdrop-filter: blur(8px);
+    color: var(--muted);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease, background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    display: grid;
+    place-items: center;
+}
+
+pre:hover .copy-button {
+    opacity: 1;
+}
+
+pre .copy-button:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+
+pre .copy-button:active {
+    transform: translateY(0);
+}
+
+pre .copy-button.copied {
+    color: #10b981;
+    border-color: #10b981;
+}
+
+pre .copy-button i {
+    font-size: 0.9rem;
+}
+
+/* Blog page in-page search */
+.blog-search {
+    margin-bottom: 2rem;
+}
+
+.blog-search-input-wrapper {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.blog-search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 1rem;
+}
+
+#blogSearchInput {
+    width: 100%;
+    padding: 0.875rem 1rem 0.875rem 2.5rem;
+    border: 1px solid var(--line);
+    border-radius: 0.75rem;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 1rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#blogSearchInput:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent), transparent 85%);
+}
+
+#blogSearchInput::placeholder {
+    color: var(--muted);
+}
+
+.blog-search-results {
+    display: none;
+}
+
+.blog-search-results.active {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.blog-search-result-item {
+    padding: 0.875rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    text-decoration: none;
+    display: block;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.blog-search-result-item:hover {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--paper), var(--accent-soft) 30%);
+}
+
+.blog-search-result-title {
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.blog-search-result-date {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+}
+
+.blog-search-result-preview {
+    margin: 0.5rem 0 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.blog-search-empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 2rem;
+    border-radius: 0.75rem;
+    border: 1px dashed var(--line);
+}
+
+/* In-page search hides original list when searching */
+.blog-search-results.active + #originalPostList {
+    display: none;
 }

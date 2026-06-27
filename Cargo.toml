@@ -43,3 +43,4 @@ warp = { version = "0.4.2", features = ["server"] }
 webbrowser = "1.1.0"
 
 lazy_static = "1.5.0"
+serde_json = "1.0.145"

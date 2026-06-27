@@ -5,8 +5,12 @@
         {% if current_page.meta.title %}
         <h1 class="title">{{ current_page.meta.title }}</h1>
         {% endif %}
-        {% if current_page.meta.date %}
-        <time class="meta">{{ current_page.meta.date }}</time>
+        {% if current_page.meta.date or current_page.reading_time > 0 %}
+        <div class="meta">
+            {% if current_page.meta.date %}{{ current_page.meta.date }}{% endif %}
+            {% if current_page.meta.date %} · {% endif %}
+            {% if config.language == "zh" %}{{ current_page.reading_time }} 分钟阅读{% else %}{{ current_page.reading_time }} min read{% endif %}
+        </div>
         {% endif %}
     </header>
     <div class="content">{{ content | safe }}</div>
