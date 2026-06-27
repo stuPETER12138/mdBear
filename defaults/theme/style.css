@@ -83,6 +83,10 @@
     --font-mono: "SFMono-Regular", Consolas, monospace;
 }
 
+html {
+    background-color: var(--bg);
+}
+
 /* Transition only applies when .theme-transitioning class is active (set by JS on toggle) */
 html.theme-transitioning {
     transition: --theme-bg 0.5s ease, --theme-paper 0.5s ease, --theme-ink 0.5s ease,
@@ -143,6 +147,7 @@ html[data-theme="dark"] {
 html {
     scroll-behavior: smooth;
     transition: background-color 0.5s ease, color 0.5s ease;
+    height: 100%;
 }
 
 body {
@@ -154,6 +159,18 @@ body {
     font-size: 16px;
     line-height: 1.72;
     transition: background-color 0.5s ease, color 0.5s ease;
+    animation: page-fade-in 0.6s ease-out both;
+}
+
+@keyframes page-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body {
+        animation: none;
+    }
 }
 
 /* Reading progress bar */
@@ -971,6 +988,32 @@ pre .copy-button i {
 /* Blog page in-page search */
 .blog-search {
     margin-bottom: 2rem;
+}
+
+/* View Transition page enter/exit animation */
+::view-transition-old(root) {
+    animation: fade-out 0.3s ease-in-out both;
+}
+
+::view-transition-new(root) {
+    animation: fade-in 0.3s ease-in-out both;
+}
+
+@keyframes fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none;
+    }
 }
 
 .blog-search-input-wrapper {

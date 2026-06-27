@@ -163,33 +163,54 @@
     <script>
         // Theme toggle
         const themeToggle = document.querySelector('.nav-theme-toggle');
-        themeToggle?.addEventListener('click', async () => {
-            const current = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            const next = current === 'dark' ? 'light' : 'dark';
+        function setTheme(next) {
             // Activate theme transition (only on toggle, not on page load)
             document.documentElement.classList.add('theme-transitioning');
 
             function completeTransition() {
                 document.documentElement.dataset.theme = next;
                 localStorage.setItem('mdbear-theme', next);
+                // Update color-scheme for browser UI (scrollbar, etc.)
+                document.documentElement.style.colorScheme = next;
             }
 
             // Use View Transition API for smooth crossfade
             if (document.startViewTransition) {
                 try {
                     const transition = document.startViewTransition(completeTransition);
-                    await transition.finished;
+                    transition.finished
+                        .catch(() => { /* ignore abort */ })
+                        .finally(() => {
+                            setTimeout(() => document.documentElement.classList.remove('theme-transitioning'), 600);
+                        });
                 } catch (e) {
                     // Fallback if transition fails
                     completeTransition();
+                    setTimeout(() => document.documentElement.classList.remove('theme-transitioning'), 600);
                 }
             } else {
                 completeTransition();
+                setTimeout(() => document.documentElement.classList.remove('theme-transitioning'), 600);
             }
+        }
 
-            // Remove transition class after animation completes
-            setTimeout(() => document.documentElement.classList.remove('theme-transitioning'), 600);
+        themeToggle?.addEventListener('click', () => {
+            const current = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            const next = current === 'dark' ? 'light' : 'dark';
+            setTheme(next);
         });
+
+        // Auto-update when system theme changes
+        matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            // Only auto-switch if user hasn't manually set a preference
+            if (!localStorage.getItem('mdbear-theme')) {
+                const next = e.matches ? 'dark' : 'light';
+                setTheme(next);
+            }
+        });
+
+        // Ensure color-scheme is correct on page load
+        document.documentElement.style.colorScheme = document.documentElement.dataset.theme;
 
         // Active nav highlight — resolve relative hrefs to compare with current path
         const currentPath = window.location.pathname.replace(/\/$/, '') || '/index.html';
@@ -344,6 +365,230 @@
                 });
             });
         })();
+
+// Smooth page transition with View Transition API
+(function() {
+    // Only add transition for browsers that support it
+    if (!document.startViewTransition) return;
+
+    // Intercept all internal navigation links
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('a');
+        if (!link) return;
+
+        const href = link.getAttribute('href');
+        if (!href) return;
+
+        // Skip external links, links with target="_blank", and hash links
+        if (
+            href.match(/^https?:\/\//) ||
+            href.match(/^#/) ||
+            link.getAttribute('target') === '_blank' ||
+            link.origin !== window.location.origin
+        ) {
+            return;
+        }
+
+        e.preventDefault();
+
+        const navigate = () => {
+            fetch(href)
+                .then(response => response.text())
+                .then(html => {
+                    // Parse the new HTML
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    // Replace the main content
+                    const newContent = doc.querySelector('.page-main').innerHTML;
+                    const newMargin = doc.querySelector('.page-margin').innerHTML;
+                    document.querySelector('.page-main').innerHTML = newContent;
+                    document.querySelector('.page-margin').innerHTML = newMargin;
+                    // Update URL
+                    history.pushState(null, '', href);
+                    // Update active nav highlighting
+                    updateActiveNav();
+                    // Re-initialize scripts for the new content
+                    reinitializeScripts();
+                    // Scroll to top
+                    window.scrollTo(0, 0);
+                })
+                .catch(() => {
+                    // Fallback on error
+                    window.location.href = href;
+                });
+        };
+
+        if (document.startViewTransition) {
+            const transition = document.startViewTransition(navigate);
+            transition.finished.catch(() => {});
+        } else {
+            navigate();
+        }
+    });
+
+    // Handle back/forward navigation
+    window.addEventListener('popstate', () => {
+        if (document.startViewTransition) {
+            document.startViewTransition(() => {
+                window.location.reload();
+            });
+        } else {
+            window.location.reload();
+        }
+    });
+
+    // Update active nav highlighting after navigation
+    function updateActiveNav() {
+        const currentPath = window.location.pathname.replace(/\/$/, '') || '/index.html';
+        const navLinks = document.querySelectorAll('.rail-nav a');
+        navLinks.forEach((link) => {
+            const href = link.getAttribute('href');
+            if (!href) return;
+            const a = document.createElement('a');
+            a.href = href;
+            const resolved = a.pathname.replace(/\/$/, '') || '/index.html';
+            const isMatch = resolved === currentPath ||
+                (resolved.endsWith('/blog.html') && currentPath.startsWith(resolved.replace('blog.html', 'blog/')));
+            if (isMatch) {
+                link.classList.add('active');
+                link.setAttribute('aria-current', 'page');
+            } else {
+                link.classList.remove('active');
+                link.removeAttribute('aria-current');
+            }
+        });
+    }
+
+    // Re-initialize scripts that need to run on new content
+    function reinitializeScripts() {
+        // Re-highlight code
+        if (window.Prism) {
+            Prism.highlightAll();
+        }
+        // Re-render math
+        if (window.renderMathInElement) {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\[', right: '\\]', display: true},
+                    {left: '\\(', right: '\\)', display: false}
+                ],
+                throwOnError: false,
+                strict: 'ignore'
+            });
+        }
+        // Re-setup lightbox
+        if (window.lightbox) {
+            document.querySelectorAll('.content img:not([data-no-lightbox])').forEach(function(img) {
+                if (img.parentElement.tagName !== 'A') {
+                    const a = document.createElement('a');
+                    a.href = img.src;
+                    a.setAttribute('data-lightbox', 'blog-gallery');
+                    if (img.alt) {
+                        a.setAttribute('data-title', img.alt);
+                    }
+                    img.parentNode.insertBefore(a, img);
+                    a.appendChild(img);
+                }
+            });
+        }
+        // Re-setup TOC highlighting
+        if ('IntersectionObserver' in window) {
+            const tocLinks = document.querySelectorAll('.toc-card a');
+            if (tocLinks.length > 0) {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+                    if (entries[0].isIntersecting) {
+                        const id = entries[0].target.id;
+                        tocLinks.forEach((link) => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === `#${id}`) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                }, {
+                    rootMargin: '-10% 0px -60% 0px',
+                    threshold: [0, 0.1, 1]
+                });
+                document.querySelectorAll('.heading-anchor[id]').forEach((anchor) => {
+                    observer.observe(anchor);
+                });
+            }
+        }
+        // Re-add copy buttons to code blocks
+        document.querySelectorAll('pre code').forEach((codeBlock) => {
+            const pre = codeBlock.parentElement;
+            if (!pre || pre.querySelector('.copy-button')) return;
+            const button = document.createElement('button');
+            button.className = 'copy-button';
+            button.setAttribute('aria-label', 'Copy code');
+            button.innerHTML = '<i class="fa-regular fa-copy"></i>';
+            button.addEventListener('click', async () => {
+                const code = codeBlock.textContent || '';
+                try {
+                    await navigator.clipboard.writeText(code);
+                    button.innerHTML = '<i class="fa-solid fa-check"></i>';
+                    button.classList.add('copied');
+                    setTimeout(() => {
+                        button.innerHTML = '<i class="fa-regular fa-copy"></i>';
+                        button.classList.remove('copied');
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy:', err);
+                    button.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                    setTimeout(() => {
+                        button.innerHTML = '<i class="fa-regular fa-copy"></i>';
+                    }, 2000);
+                }
+            });
+            pre.appendChild(button);
+        });
+        // Re-process external links
+        document.querySelectorAll('.content a').forEach((link) => {
+            const href = link.getAttribute('href');
+            if (!href) return;
+            if (href.match(/^https?:\/\//) || href.match(/^\/\//)) {
+                if (!link.getAttribute('target')) {
+                    link.setAttribute('target', '_blank');
+                    link.setAttribute('rel', 'noopener noreferrer');
+                }
+            }
+        });
+        // Re-setup immersive light effect
+        document.querySelectorAll('.immersive-light').forEach((surface) => {
+            surface.addEventListener('pointermove', (event) => {
+                const rect = surface.getBoundingClientRect();
+                surface.style.setProperty('--glow-x', `${event.clientX - rect.left}px`);
+                surface.style.setProperty('--glow-y', `${event.clientY - rect.top}px`);
+                surface.dataset.glowing = 'true';
+            });
+            surface.addEventListener('pointerleave', () => {
+                delete surface.dataset.glowing;
+            });
+        });
+        // Re-calculate reading progress
+        const progressBar = document.getElementById('readingProgress');
+        if (progressBar && document.querySelector('.essay')) {
+            const updateProgress = () => {
+                const essay = document.querySelector('.essay');
+                const rect = essay.getBoundingClientRect();
+                const essayTop = rect.top + window.scrollY;
+                const essayHeight = essay.height;
+                const windowHeight = window.innerHeight;
+                const scrollPosition = window.scrollY;
+                const progress = Math.max(0, Math.min(100,
+                    ((scrollPosition + windowHeight) - essayTop) / essayHeight * 100
+                ));
+                progressBar.style.width = `${progress}%`;
+            };
+            window.addEventListener('scroll', updateProgress, { passive: true });
+            window.addEventListener('resize', updateProgress);
+            updateProgress();
+        }
+    }
+})();
 
 // Blog page in-page search
 (function() {
